@@ -1,6 +1,6 @@
 "use client";
 
-import { message } from "@/lib/types";
+import { message } from "../types";
 import React from "react";
 
 export default function Messages(props: { messages: message[] }) {

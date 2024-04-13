@@ -1,7 +1,7 @@
 "use client"
 import { useRef, useState } from "react";
 import Messages from "../../lib/components/messages";
-import { message } from "@/lib/types";
+import { message } from "../../lib/types";
 
 
 export default function ChatPage() {
