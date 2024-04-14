@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Conversations from "@/lib/components/conversations";
 import "@fortawesome/fontawesome-svg-core/styles.css"
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +24,9 @@ export default function RootLayout({
           <Conversations/>
           <div className="flex-1 bg-[#212121] p-4 flex flex-col relative">
             <p>GPT 4 Turbo</p>
+            <Suspense fallback={<p>Loading...</p>}>
               {children}
+            </Suspense>
           </div>
       </main>
       </body>

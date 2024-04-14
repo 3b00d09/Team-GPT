@@ -13,7 +13,7 @@ export default async function Conversations(){
                 <Link href="/">Team GPT </Link>
             </div>
 
-            <div className="mt-24 grid gap-2">
+            <div className="mt-12 grid gap-2">
                 {conversations.map((conversation, index) => {
                     return(
                         <Link key={index} href={`/chat/${conversation.id}`} className="bg-red-900">
