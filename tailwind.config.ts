@@ -5,13 +5,7 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
-  // messages component starts empty so theses classes dont compile, have to include them here
-  safelist: [
-    'w-3/4',
-    'px-4',
-    'py-2',
-    'text-base',
+    "./src/lib/**/*.{js,ts,jsx,tsx,mdx}"
   ],
   theme: {
     extend: {

@@ -1,3 +1,5 @@
+import { dbClient } from "@/lib/db/db";
+import { messagesTable } from "@/lib/db/schema";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -8,8 +10,11 @@ export const POST = async (request: Request) => {
 
     const data = await request.json();
     const message = data.content;
+    const conversation = data.conversation;
+    const newEntry = data.new;
+
     const completion = await openai.chat.completions.create({
-            model: "gpt-4-turbo",
+            model: "gpt-3.5-turbo",
             messages: [
             {
                 role: "system",
@@ -23,8 +28,34 @@ export const POST = async (request: Request) => {
             ],
     });
 
-    console.log(completion.choices[0].message.content)
-    return Response.json(completion.choices[0].message.content);
+    if(!completion.choices[0].message.content) return Response.json({ message: "Error creating message" });
+    
+    try{
+        await dbClient.transaction(async(tx)=>{
 
+            if(!newEntry){
+                await tx.insert(messagesTable).values({
+                    //@ts-ignore
+                    conversationId: conversation,
+                    content: message,
+                    user: 1,
+                    assistant: 0,
+                });
+            }
+       
+            await tx.insert(messagesTable).values({
+                //@ts-ignore    
+                conversationId: conversation,
+                content: completion.choices[0].message.content,
+                user: 0,
+                assistant: 1,
+            });
+        
+        })
 
+        return Response.json({success: true});
+    }catch(err){
+        return Response.json({ message: "Error creating message" });
+    }
+    
 }
