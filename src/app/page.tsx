@@ -1,5 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input"
 import React from "react";
 
 
@@ -30,13 +31,13 @@ export default function Home() {
             A bunch of stuff here?
         </div>
         <form className="self-center w-1/2" action={createConversation}>
-            <input 
+            <Input 
                 name="message"
                 className="w-full p-4 rounded-lg bg-transparent border border-slate-600" 
                 placeholder="Message ChatGPT..." 
                 type="text" 
                 >
-            </input>
+            </Input>
         </form>
       </div>
   );

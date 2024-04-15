@@ -18,8 +18,12 @@ export default function Messages(props: { messages: typeof messagesTable.$inferS
 }
 
 
+type tempMessage = {
+    content: string,
+    user: boolean
 
-const Message = (props:{message:typeof messagesTable.$inferSelect}) =>{
+}
+export const Message = (props:{message:typeof messagesTable.$inferSelect | tempMessage}) =>{
     return (
         <div className="w-3/4">
             <p className="px-4 py-2 text-base flex items-center gap-2">
