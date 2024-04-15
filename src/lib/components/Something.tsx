@@ -62,7 +62,7 @@ export default function Something(props: props) {
     return (
         <div className="grid flex-1 grid-rows-[10fr_1fr] overflow-y-auto">
 
-            <div className="flex flex-col items-center mt-12 gap-8 overflow-auto" ref={messagesContainerRef}>
+            <div className="overflow-auto" ref={messagesContainerRef}>
                 <Suspense key={JSON.stringify(props.searchParams)} fallback={<div>loading...</div>}>
                     {props.children}
                 </Suspense>
@@ -71,7 +71,8 @@ export default function Something(props: props) {
                     <Message message={{
                         content: latestMessage,
                         user: true,
-                    }}  />
+                    }} lastMessage={true}
+                    />
                 }
                 {loading && <LoadingSpinner/>}
             </div>
