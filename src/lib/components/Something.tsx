@@ -47,8 +47,14 @@ export default function Something(props: props) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
         
-        if(!loading) setLatestMessage("")
+        if(!loading){
+            setLatestMessage("")
+            if(inputRef.current) inputRef.current.disabled = false;
+        } 
         
+        else{
+            if(inputRef.current) inputRef.current.disabled = true;
+        }
     },[loading, latestMessage])
 
 
