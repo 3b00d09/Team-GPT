@@ -16,15 +16,18 @@ export default function Messages(props: { messages: typeof messagesTable.$inferS
     })
 
     const navigateToBottom = ()=>{
-        if(containerRef.current){
-            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        // no shame in good ol' vanilla js (for now)
+        const messagesContainer = document.querySelector("#messages-container")
+        if(messagesContainer){
+            messagesContainer.scrollTo({
+                top: messagesContainer.scrollHeight,
+                behavior: "smooth"
+            })
         }
     }
 
-
-// need to fix scroll not working due to containerRef not having a height
     return (
-        <div className="flex flex-col items-center mt-12 gap-8 overflow-auto" ref={containerRef}>    
+        <div className="flex flex-col items-center h-full mt-12 gap-8" ref={containerRef}>    
             {props.messages.map((message, index) => {
                 if(index === props.messages.length - 1){
                     return(

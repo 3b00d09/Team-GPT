@@ -62,7 +62,7 @@ export default function Something(props: props) {
     return (
         <div className="grid flex-1 grid-rows-[10fr_1fr] overflow-y-auto">
 
-            <div className="overflow-auto" ref={messagesContainerRef}>
+            <div className="overflow-auto" id="messages-container" ref={messagesContainerRef}>
                 <Suspense key={JSON.stringify(props.searchParams)} fallback={<div>loading...</div>}>
                     {props.children}
                 </Suspense>
