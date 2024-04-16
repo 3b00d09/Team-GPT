@@ -1,9 +1,10 @@
 "use client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { messagesTable } from "../db/schema";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {faUser, faWheelchairMove} from "@fortawesome/free-solid-svg-icons";
 import { useIntersection } from '@mantine/hooks';
+import ReactMarkdown from 'react-markdown';
 
 export default function Messages(props: { messages: typeof messagesTable.$inferSelect[] }) {
     
@@ -60,12 +61,23 @@ type messageProps = {
 
 
 export const Message = (props:messageProps) =>{
-    
+    // converting the markdown from server to html on the client causes a hydration error
+    // so we'll wait for the component to mount before rendering the markdown
+
+    const [hasMounted, setHasMounted] = useState(false)
+
+    useEffect(()=>{
+        setHasMounted(true)
+    },[])
+
+    if(!hasMounted) return null
     return (
         <div className="w-3/4">
-            <p className="px-4 py-2 text-base flex items-center gap-2">
+            <p className="px-4 py-2 text-base">
                 {props.message.user === true ? <FontAwesomeIcon icon={faUser} /> : <FontAwesomeIcon icon={faWheelchairMove} /> }
-                {props.message.content}
+                <ReactMarkdown>
+                    {props.message.content}
+                </ReactMarkdown>
             </p>
         </div>
     )

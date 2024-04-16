@@ -1,11 +1,12 @@
 "use server"
-import Messages from "@/lib/components/messages";
+import Messages from "@/lib/components/Messages";
 import { dbClient } from "@/lib/db/db";
 import { conversationsTable, messagesTable } from "@/lib/db/schema";
 import { getTableColumns, asc } from "drizzle-orm";
 import { eq } from "drizzle-orm/sqlite-core/expressions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import {micromark} from 'micromark'
 
 type props = {
     params:{

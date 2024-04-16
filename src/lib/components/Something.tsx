@@ -6,7 +6,7 @@ import { sendMessage } from "../actions";
 import { useFormState } from "react-dom";
 import { useFormStatus } from "react-dom";
 import { useRef } from "react";
-import { Message } from "./messages";
+import { Message } from "./Messages";
 
 type props = {
     params:{
