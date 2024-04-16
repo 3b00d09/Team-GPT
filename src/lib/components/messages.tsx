@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {faUser, faWheelchairMove} from "@fortawesome/free-solid-svg-icons";
 import { useIntersection } from '@mantine/hooks';
 import Markdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight'
 import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
@@ -79,7 +80,7 @@ export const Message = (props:messageProps) =>{
         <div className="w-3/4">
             <p className="px-4 py-2 text-base">
                 {props.message.user === true ? <FontAwesomeIcon icon={faUser} /> : <FontAwesomeIcon icon={faWheelchairMove} /> }
-                <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]}>
                     {props.message.content}
                 </Markdown>
             </p>
