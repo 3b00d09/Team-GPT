@@ -26,6 +26,20 @@ export default async function MessagesContainer(props: props){
     .orderBy(asc(messagesTable.createdAt));
 
 
+    //https://github.com/remarkjs/react-markdown/issues/785#issuecomment-1966495891
+    messages.forEach((message)=>{
+        message.content = message.content.replace(
+            /\\\[(.*?)\\\]/gs,
+            (_, equation) => `$$${equation}$$`,
+        );
+
+        message.content = message.content.replace(
+            /\\\((.*?)\\\)/gs,
+            (_, equation) => `$${equation}$`
+        )
+    })
+
+
     if(props.searchParams["new"] && props.searchParams["message"]){
         const messageId = props.searchParams["message"];
         const messageContent = await dbClient.select({content: messagesTable.content}).from(messagesTable).where(eq(messagesTable.id, parseInt(messageId!)));

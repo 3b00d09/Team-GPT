@@ -4,7 +4,11 @@ import { messagesTable } from "../db/schema";
 import React, { useEffect, useRef, useState } from "react";
 import {faUser, faWheelchairMove} from "@fortawesome/free-solid-svg-icons";
 import { useIntersection } from '@mantine/hooks';
-import ReactMarkdown from 'react-markdown';
+import Markdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex'
+import remarkMath from 'remark-math'
+import 'katex/dist/katex.min.css'
+
 
 export default function Messages(props: { messages: typeof messagesTable.$inferSelect[] }) {
     
@@ -75,9 +79,9 @@ export const Message = (props:messageProps) =>{
         <div className="w-3/4">
             <p className="px-4 py-2 text-base">
                 {props.message.user === true ? <FontAwesomeIcon icon={faUser} /> : <FontAwesomeIcon icon={faWheelchairMove} /> }
-                <ReactMarkdown>
+                <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                     {props.message.content}
-                </ReactMarkdown>
+                </Markdown>
             </p>
         </div>
     )
