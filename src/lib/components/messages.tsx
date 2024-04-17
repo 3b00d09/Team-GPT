@@ -32,8 +32,14 @@ export default function Messages(props: { messages: typeof messagesTable.$inferS
         }
     }
 
+    useEffect(()=>{
+        setTimeout(() => {
+            navigateToBottom()
+        }, props.messages.length * 10);
+    },[])
+
     return (
-        <div className="flex flex-col items-center h-full mt-12 gap-8" ref={containerRef}>    
+        <div className="flex flex-col items-center mt-12 gap-8" ref={containerRef}>    
             {props.messages.map((message, index) => {
                 if(index === props.messages.length - 1){
                     return(

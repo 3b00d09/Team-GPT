@@ -2,7 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 @import 'highlight.js/styles/github.css';
+@font-face {
+  font-family: 'OxProto';
+  src: url('/fonts/OxProto-Regular.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
 
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body{
+  font-family: 'OxProto', sans-serif !important;
+}
 
   @layer base {
     :root {
@@ -77,3 +92,12 @@
       @apply bg-background text-foreground;
     }
   }
+
+.scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hidden {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+}

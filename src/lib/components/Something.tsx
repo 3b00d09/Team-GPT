@@ -37,15 +37,11 @@ export default function Something(props: props) {
         if(e.key === "Enter"){
             if (inputRef.current) {
                 setLatestMessage(inputRef.current?.value)
-                inputRef.current.value = "";
             }
         }
     }
 
     useEffect(()=>{
-        if(messagesContainerRef.current){
-            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
         
         if(!loading){
             setLatestMessage("")
@@ -53,7 +49,10 @@ export default function Something(props: props) {
         } 
         
         else{
-            if(inputRef.current) inputRef.current.disabled = true;
+            if(inputRef.current){
+                inputRef.current.value = "";
+                inputRef.current.disabled = true;
+            } 
         }
     },[loading, latestMessage])
 

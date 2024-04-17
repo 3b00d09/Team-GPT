@@ -6,7 +6,6 @@ import { getTableColumns, asc } from "drizzle-orm";
 import { eq } from "drizzle-orm/sqlite-core/expressions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import {micromark} from 'micromark'
 
 type props = {
     params:{
@@ -55,7 +54,7 @@ export default async function MessagesContainer(props: props){
 
         if(res.success){
             revalidatePath(`/chat/${props.params.id}`);
-            revalidatePath("/")
+            revalidatePath("/", "layout")
             redirect(`/chat/${props.params.id}`);
         }
     }
