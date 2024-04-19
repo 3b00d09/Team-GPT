@@ -1,12 +1,14 @@
 "use client"
 
 import { Input } from "@/components/ui/input";
-import { Suspense, useEffect, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { Suspense, useEffect, useState } from "react";
 import { sendMessage } from "../actions";
 import { useFormState } from "react-dom";
 import { useFormStatus } from "react-dom";
 import { useRef } from "react";
-import { Message } from "./Messages";
+import Message from "./Messages";
+import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons";
 
 type props = {
     params:{
@@ -28,9 +30,12 @@ export default function Something(props: props) {
     });
 
     const [loading, setLoading] = useState<boolean>(false)
+    const [file, setFile] = useState<File | null>(null)
+    const [previewImage, setPreviewImage] = useState<string>("")
     const [latestMessage, setLatestMessage] = useState<string>("")
     
     const inputRef = useRef<HTMLInputElement>(null);
+    const fileUploadRef = useRef<HTMLInputElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     const handleSubmitUI = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -41,8 +46,19 @@ export default function Something(props: props) {
         }
     }
 
+    const handleFileSubmission = (e: React.MouseEvent<HTMLInputElement>) => {  
+        if(fileUploadRef.current){  
+            setFile(fileUploadRef.current.files![0])
+        }
+    }
+
+    const forwardFileEvent =  (e: React.MouseEvent<SVGSVGElement>) =>{
+        if(fileUploadRef.current){
+            fileUploadRef.current.click()
+        }
+    }
+
     useEffect(()=>{
-        
         if(!loading){
             setLatestMessage("")
             if(inputRef.current) inputRef.current.disabled = false;
@@ -55,6 +71,13 @@ export default function Something(props: props) {
             } 
         }
     },[loading, latestMessage])
+
+    
+    useEffect(()=>{
+        if(file){
+            setPreviewImage(URL.createObjectURL(file))
+        }
+    }, [file])
 
 
     
@@ -76,19 +99,39 @@ export default function Something(props: props) {
                 {loading && <LoadingSpinner/>}
             </div>
 
-            <form className="self-end justify-self-center w-1/2" action={action}>
-                <Input 
+            <form className="flex self-end justify-self-center w-1/2" action={action}>
+                <div className="relative flex-grow">
+                    <Input
                     name="message"
-                    className="p-4 rounded-md bg-transparent border resize-none overflow-auto border-slate-600 text-base h-full" 
-                    placeholder="Message ChatGPT..." 
+                    className="p-4 rounded-md bg-transparent border resize-none overflow-auto border-slate-600 text-base h-full w-full"
+                    placeholder="Message ChatGPT..."
                     type="text"
                     ref={inputRef}
                     onKeyUp={handleSubmitUI}
-                    >
-                </Input>
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <FontAwesomeIcon
+                        icon={faArrowUpFromBracket}
+                        className="text-lg text-gray-400 z-10 pointer-events-auto cursor-pointer hover:text-gray-600"
+                        onClick={forwardFileEvent}
+                    />
+                    </div>
+                    {previewImage && <img src={previewImage} 
+                        className="absolute object-contain bottom-12 right-0 w-28 border border-slate-600"/>}
+                </div>
+
+                <Input
+                    onInput={handleFileSubmission}
+                    ref={fileUploadRef}
+                    name="media"
+                    type="file"
+                    accept="image/png, image/jpg, image/jpeg"
+                    className="hidden"
+                />
+
+                <Input type="hidden" name="conversation" value={props.params.id}/>
                 <SubmitButton setLoading={setLoading}/>
                 
-                <Input type="hidden" name="conversation" value={props.params.id}/>
             </form>
         </div>
             

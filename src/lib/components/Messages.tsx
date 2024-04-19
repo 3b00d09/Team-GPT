@@ -11,7 +11,7 @@ import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 
 
-export default function Messages(props: { messages: typeof messagesTable.$inferSelect[] }) {
+export default function Messages(props: { messages: typeof messagesTable.$inferSelect[]}) {
     
     const lastMessageRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);

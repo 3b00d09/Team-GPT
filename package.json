@@ -17,6 +17,7 @@
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@libsql/client": "^0.6.0",
     "@mantine/hooks": "^7.8.0",
+    "@radix-ui/react-label": "^2.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "create-next-app": "^14.2.1",
