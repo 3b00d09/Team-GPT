@@ -7,7 +7,7 @@ import { sendMessage } from "../actions";
 import { useFormState } from "react-dom";
 import { useFormStatus } from "react-dom";
 import { useRef } from "react";
-import Message from "./Messages";
+import { Message } from "@/lib/components/Messages";
 import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons";
 
 type props = {
@@ -26,7 +26,8 @@ type submitBtnProps = {
 export default function Something(props: props) {  
 
     const [state, action] = useFormState(sendMessage, {
-        error: false
+        error: false,
+        message: ""
     });
 
     const [loading, setLoading] = useState<boolean>(false)
@@ -88,7 +89,7 @@ export default function Something(props: props) {
                 <Suspense key={JSON.stringify(props.searchParams)} fallback={<div>loading...</div>}>
                     {props.children}
                 </Suspense>
-                {state.error && <div className="text-red-500">Error sending message</div>}
+                {state.error && <div className="text-red-500">{state.message}</div>}
                 {!state.error && latestMessage.length > 0 && 
                     <Message message={{
                         content: latestMessage,
@@ -123,7 +124,7 @@ export default function Something(props: props) {
                 <Input
                     onInput={handleFileSubmission}
                     ref={fileUploadRef}
-                    name="media"
+                    name="image"
                     type="file"
                     accept="image/png, image/jpg, image/jpeg"
                     className="hidden"
