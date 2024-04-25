@@ -5,6 +5,7 @@ import { dbClient } from "./db/db";
 import { messagesTable } from "./db/schema";
 import { eq } from "drizzle-orm";
 import OpenAI from "openai";
+import { utapi } from "./uploadthing";
 
 type sendMessageState = {
     error: boolean
@@ -21,13 +22,18 @@ export async function sendMessage(state: sendMessageState, formData: FormData): 
     const image = formData.get("image") as File;
 
     if (message && conversationId) {
+        if(image){
+            const res = await utapi.uploadFiles(image)
+            console.log(res)
+        }
+        
         const convoId = parseInt(conversationId.toString());
         // to optimize later
         const chatHistory = await dbClient.select().from(messagesTable).where(eq(messagesTable.conversationId, convoId))
         
         try {
             const completion = await openai.chat.completions.create({
-                model: "gpt-4-turbo",
+                model: "gpt-3.5-turbo",
                 messages: [
                     {
                         role: "system",
@@ -37,16 +43,6 @@ export async function sendMessage(state: sendMessageState, formData: FormData): 
                     {
                         role: "system",
                         content: "The following is the current conversation history. Use it to assist in your response. \n" + chatHistory.map((message) => message.content).join("\n") + "\n"
-                    },
-                    {
-                        role: "user",
-                        content: [{
-                            type: "image_url",
-                            image_url: {
-                                url: image ? "https://ikcxvcutdjftdsvbpwsa.supabase.co/storage/v1/object/public/test2/image_9cb62926-1623-4c38-91e7-f6d9b06daa49.JPG" : "",
-                            }
-
-                        }]
                     },
                     {
                         role: "user",
