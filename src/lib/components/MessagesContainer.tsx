@@ -6,6 +6,7 @@ import { getTableColumns, asc } from "drizzle-orm";
 import { eq } from "drizzle-orm/sqlite-core/expressions";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sendMessage } from "../actions";
 
 type props = {
     params:{
@@ -37,27 +38,6 @@ export default async function MessagesContainer(props: props){
             (_, equation) => `$${equation}$`
         )
     })
-
-
-    if(props.searchParams["new"] && props.searchParams["message"]){
-        const messageId = props.searchParams["message"];
-        const messageContent = await dbClient.select({content: messagesTable.content}).from(messagesTable).where(eq(messagesTable.id, parseInt(messageId!)));
-        const req = await fetch("http://localhost:3000/api/message", {
-            method: "POST",
-            body: JSON.stringify({ content: messageContent[0].content, conversation: props.params.id, new:true}),
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
-
-        const res = await req.json();
-
-        if(res.success){
-            revalidatePath(`/chat/${props.params.id}`);
-            revalidatePath("/", "layout")
-            redirect(`/chat/${props.params.id}`);
-        }
-    }
 
     return (
         <Messages messages={messages}/>

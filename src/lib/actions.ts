@@ -22,9 +22,14 @@ export async function sendMessage(state: sendMessageState, formData: FormData): 
     const image = formData.get("image") as File;
 
     if (message && conversationId) {
-        if(image){
-            const res = await utapi.uploadFiles(image)
-            console.log(res)
+        if(image && image.name !== ""){
+            try{
+                const res = await utapi.uploadFiles(image)
+                console.log(res)
+            }
+            catch(e){
+                console.log("failed to upload image")
+            }
         }
         
         const convoId = parseInt(conversationId.toString());

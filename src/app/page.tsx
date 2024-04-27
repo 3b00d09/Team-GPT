@@ -9,10 +9,12 @@ export default function Home() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   
+  
   async function createConversation(formData: FormData) {
     if(inputRef.current) inputRef.current.disabled = true;
-  const message = formData.get("message");
+    const message = formData.get("message");
       if (message) {
+
           const req = await fetch("http://localhost:3000/api/create-convo", {
               method: "POST",
               body: JSON.stringify({ content: message }),
@@ -20,7 +22,6 @@ export default function Home() {
                   "Content-Type": "application/json",
               },
           });
-
           const res = await req.json();
 
           if(res.success){

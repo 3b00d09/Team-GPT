@@ -9,6 +9,7 @@ import { useFormStatus } from "react-dom";
 import { useRef } from "react";
 import { Message } from "@/lib/components/Messages";
 import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "next/navigation";
 
 type props = {
     params:{
@@ -34,6 +35,8 @@ export default function Something(props: props) {
     const [file, setFile] = useState<File | null>(null)
     const [previewImage, setPreviewImage] = useState<string>("")
     const [latestMessage, setLatestMessage] = useState<string>("")
+
+    const router = useRouter();
     
     const inputRef = useRef<HTMLInputElement>(null);
     const fileUploadRef = useRef<HTMLInputElement>(null);
@@ -59,6 +62,24 @@ export default function Something(props: props) {
         }
     }
 
+    const sendFirstMessage = async(messageId:string) =>{
+        console.log("requesting")
+        setLoading(true);
+        const req = await fetch("http://localhost:3000/api/create-first-message", {
+            method: "POST",
+            body: JSON.stringify({ messageId }),
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        const res = await req.json();
+        setLoading(false);
+        if(res.success) router.push(`/chat/${res.convoId}`)
+        
+        
+    }
+
     useEffect(()=>{
         if(!loading){
             setLatestMessage("")
@@ -79,6 +100,11 @@ export default function Something(props: props) {
             setPreviewImage(URL.createObjectURL(file))
         }
     }, [file])
+
+    useEffect(()=>{
+        if(props.searchParams["new"] && props.searchParams["message"]) sendFirstMessage(props.searchParams["message"])
+        
+    },[])
 
 
     
