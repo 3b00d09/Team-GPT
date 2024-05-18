@@ -2,13 +2,16 @@
 
 import { Input } from "@/components/ui/input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { Suspense, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { sendMessage } from "../actions";
-import { useFormState } from "react-dom";
-import { useFormStatus } from "react-dom";
 import { useRef } from "react";
-import { Message } from "@/lib/components/Messages";
-import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons";
+import Messages from "@/lib/components/Messages";
+import  {Message}  from "@/lib/components/Messages";
+import { faArrowUpFromBracket, faWheelchairMove } from "@fortawesome/free-solid-svg-icons";
+import { CoreMessage } from "ai";
+import { StreamableValue, readStreamableValue } from 'ai/rsc';
+import { useIntersection } from "@mantine/hooks";
+import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 
 type props = {
@@ -16,39 +19,29 @@ type props = {
         id: string
     },
     searchParams: { [key: string]: string | undefined } ,
-    children: React.ReactNode
-}
-
-type submitBtnProps = {
-    setLoading: React.Dispatch<React.SetStateAction<boolean>>
+    messages: CoreMessage[],
+    stream?: StreamableValue<any,any> | null
 
 }
 
 export default function Something(props: props) {  
 
-    const [state, action] = useFormState(sendMessage, {
-        error: false,
-        message: ""
-    });
-
-    const [loading, setLoading] = useState<boolean>(false)
+    const router = useRouter();
+    const [messages, setMessages] = useState<CoreMessage[]>(props.messages)
     const [file, setFile] = useState<File | null>(null)
+    const [showScrollBtn, setShowScrollBtn] = useState<boolean>(true)
     const [previewImage, setPreviewImage] = useState<string>("")
     const [latestMessage, setLatestMessage] = useState<string>("")
 
-    const router = useRouter();
-    
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+    const chatForm = useRef<HTMLFormElement>(null);
+    const mainContainer = useRef<HTMLDivElement>(null);
     const fileUploadRef = useRef<HTMLInputElement>(null);
-    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-    const handleSubmitUI = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if(e.key === "Enter"){
-            if (inputRef.current) {
-                setLatestMessage(inputRef.current?.value)
-            }
-        }
-    }
+    const {ref, entry} = useIntersection({
+        root: mainContainer.current,
+        threshold: 0
+    })
 
     const handleFileSubmission = (e: React.MouseEvent<HTMLInputElement>) => {  
         if(fileUploadRef.current){  
@@ -62,79 +55,112 @@ export default function Something(props: props) {
         }
     }
 
-    const sendFirstMessage = async(messageId:string) =>{
-        console.log("requesting")
-        setLoading(true);
-        const req = await fetch("http://localhost:3000/api/create-first-message", {
-            method: "POST",
-            body: JSON.stringify({ messageId }),
-            headers: {
-                "Content-Type": "application/json",
-            },
-        });
+    const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        // prevent the scroll btn to spam while we are autoscrolling inside the readStreamableValue loop
+        setShowScrollBtn(false)
+        e.preventDefault();
+        if (inputRef.current) inputRef.current.disabled = true;
 
-        const res = await req.json();
-        setLoading(false);
-        if(res.success) router.push(`/chat/${res.convoId}`)
-        
-        
+        setLatestMessage("");
+        // usestate isnt fast enough to update the messages array before the readStreamableValue loop so we'll initiate a new array
+        const newMessageContent = inputRef.current?.value || "";
+        const newMessages: CoreMessage[] = [
+            ...messages,
+            { content: newMessageContent, role: "user" } as CoreMessage
+        ];
+        setMessages(newMessages);
+
+        const { newMessage } = await sendMessage(newMessages, parseInt(props.params.id));
+
+        // append the stream of content to the same string
+        let streamedContent = "";
+        for await (const content of readStreamableValue(newMessage)) {
+            streamedContent += content;
+            setLatestMessage((prev) => prev + content);
+            
+            // autoscroll to the bottom of the chat
+            navigateToBottom()
+        }
+
+        setMessages(newMessages);
+        setShowScrollBtn(true)
+
+        if (inputRef.current) {
+            inputRef.current.disabled = false;
+            inputRef.current.value = "";
+            inputRef.current.style.height = "auto";
+        }
+    };
+
+    const handleTextareaInput = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        e.currentTarget.style.height = "auto";
+        e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
     }
 
-    useEffect(()=>{
-        if(!loading){
-            setLatestMessage("")
-            if(inputRef.current) inputRef.current.disabled = false;
-        } 
-        
-        else{
-            if(inputRef.current){
-                inputRef.current.value = "";
-                inputRef.current.disabled = true;
-            } 
+    const checkTextareaSubmit = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if(e.key === "Enter" && !e.shiftKey && e.currentTarget.value.trim().length > 0){
+            // simulate a submit event on the form
+            chatForm.current?.dispatchEvent(new Event("submit", {bubbles: true}))
         }
-    },[loading, latestMessage])
+    }
 
-    
-    useEffect(()=>{
-        if(file){
-            setPreviewImage(URL.createObjectURL(file))
+    const navigateToBottom = ()=>{
+        // no shame in good ol' vanilla js (for now)
+        const messagesContainer = document.querySelector("#messages-container")
+        if(messagesContainer){
+            messagesContainer.scrollTo({
+                top: messagesContainer.scrollHeight,
+                behavior: "smooth"
+            })
         }
-    }, [file])
+    }
 
+    // the parent page will pass a stream to us if we only have 1 message which means its a new conversation that was created at the home page
     useEffect(()=>{
-        if(props.searchParams["new"] && props.searchParams["message"]) sendFirstMessage(props.searchParams["message"])
+        if(props.stream){
+            (async()=>{
+                let streamedContent = "";
+                for await (const content of readStreamableValue(props.stream!)) {
+                    streamedContent += content;
+                    setLatestMessage((prev) => prev + content);
+                }
+
+                router.refresh();
+            })()
+        }
+    },[])
         
+    // autoscroll to the bottom of the chat on first render
+    useEffect(()=>{
+        setTimeout(() => {
+            navigateToBottom()
+        }, props.messages.length * 10);
     },[])
 
-
-    
     return (
-        <div className="grid flex-1 grid-rows-[10fr_1fr] overflow-y-auto">
+        <div className="grid flex-1 grid-rows-[10fr_1fr] overflow-y-auto" ref={mainContainer}>
 
-            <div className="overflow-auto" id="messages-container" ref={messagesContainerRef}>
-                <Suspense key={JSON.stringify(props.searchParams)} fallback={<div>loading...</div>}>
-                    {props.children}
-                </Suspense>
-                {state.error && <div className="text-red-500">{state.message}</div>}
-                {!state.error && latestMessage.length > 0 && 
-                    <Message message={{
-                        content: latestMessage,
-                        user: true,
-                    }} lastMessage={true}
-                    />
+            <div className="overflow-auto" id="messages-container">
+                <Messages messages={messages}/>
+
+                {latestMessage.length > 0 &&
+                    <Message message={{content: latestMessage, role: "assistant"}} latest={true}/>
                 }
-                {loading && <LoadingSpinner/>}
+                <div ref={ref} className="h-[1px]"></div>
             </div>
 
-            <form className="flex self-end justify-self-center w-1/2" action={action}>
+            
+            {!entry?.isIntersecting && showScrollBtn && <NavigateToBottom navigateToBottom={navigateToBottom}/>}
+
+            <form className="flex self-end justify-self-center w-1/2" onSubmit={handleFormSubmit} ref={chatForm}>
                 <div className="relative flex-grow">
-                    <Input
+                    <Textarea
                     name="message"
-                    className="p-4 rounded-md bg-transparent border resize-none overflow-auto border-slate-600 text-base h-full w-full"
-                    placeholder="Message ChatGPT..."
-                    type="text"
+                    className="p-4 rounded-md bg-transparent border resize-none overflow-auto border-slate-600 text-base w-full animate-height max-h-[10rem]"
+                    placeholder="Message AI..."
                     ref={inputRef}
-                    onKeyUp={handleSubmitUI}
+                    onInput={handleTextareaInput}
+                    onKeyUp={checkTextareaSubmit}
                     />
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <FontAwesomeIcon
@@ -156,8 +182,7 @@ export default function Something(props: props) {
                     className="hidden"
                 />
 
-                <Input type="hidden" name="conversation" value={props.params.id}/>
-                <SubmitButton setLoading={setLoading}/>
+                <button className="hidden" type="submit">Send</button>
                 
             </form>
         </div>
@@ -165,22 +190,20 @@ export default function Something(props: props) {
     );
 }   
 
-function SubmitButton({setLoading}: submitBtnProps){
-    const {pending} = useFormStatus();
-
-    useEffect(()=>{
-        setLoading(pending)
-    },[pending])
-
-    return(
-        <button className="hidden" type="submit">Send</button>
-    )
-}
-
 function LoadingSpinner(){
     return (
         <div className="flex justify-center items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500"></div>
         </div>
     );
+}
+
+const NavigateToBottom = ({navigateToBottom} : any) => {   
+    return (
+        <div className="fixed bottom-20">
+            <button onClick={navigateToBottom} className="bg-blue-500 text-white p-2 rounded-full">
+                <FontAwesomeIcon icon={faWheelchairMove}/>
+            </button>
+        </div>
+    )
 }

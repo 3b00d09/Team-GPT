@@ -2,13 +2,10 @@
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input"
 import React, { useRef } from "react";
-import { revalidatePath } from "next/cache";
-
 
 export default function Home() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  
   
   async function createConversation(formData: FormData) {
     if(inputRef.current) inputRef.current.disabled = true;
@@ -25,7 +22,7 @@ export default function Home() {
           const res = await req.json();
 
           if(res.success){
-            router.push(`/chat/${res.id}/?message=${res.newMessageId}&new=true`)
+            router.push(`/chat/${res.id}`)
           }
           else{
             if(inputRef.current) inputRef.current.disabled = false;

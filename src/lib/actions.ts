@@ -7,108 +7,85 @@ import { eq } from "drizzle-orm";
 import OpenAI from "openai";
 import { utapi } from "./uploadthing";
 
+import { createStreamableValue } from "ai/rsc";
+import { readStreamableValue } from "ai/rsc";
+import { CoreMessage, streamText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
 type sendMessageState = {
     error: boolean
     message: string;
 }
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_KEY,
-});
+// const openai = new OpenAI({
+//     apiKey: process.env.OPENAI_KEY,
+// });
 
-export async function sendMessage(state: sendMessageState, formData: FormData): Promise<sendMessageState> {
-    const message = formData.get("message");
-    const conversationId = formData.get("conversation");
-    const image = formData.get("image") as File;
+export async function sendMessage(messages: CoreMessage[], convoId: number, image?:File | null) {
+    //const image = formData.get("image") as File;
 
-    if (message && conversationId) {
-        if(image && image.name !== ""){
-            try{
-                const res = await utapi.uploadFiles(image)
-                console.log(res)
+        // if(image && image.name !== ""){
+        //     try{
+        //         const res = await utapi.uploadFiles(image)
+        //         console.log(res)
+        //     }
+        //     catch(e){
+        //         console.log("failed to upload image")
+        //     }
+        // }
+
+        const stream = createStreamableValue();
+        (async()=>{
+            const {textStream} = await streamText({
+                model:openai("gpt-4o-2024-05-13"),
+                messages: messages,
+                system:"You are a helpful assistant."
+            })
+
+            let AIMessage: string = "";
+            for await(const text of textStream){
+                stream.update(text);
+                AIMessage = AIMessage + text;
             }
-            catch(e){
-                console.log("failed to upload image")
-            }
-        }
-        
-        const convoId = parseInt(conversationId.toString());
-        // to optimize later
-        const chatHistory = await dbClient.select().from(messagesTable).where(eq(messagesTable.conversationId, convoId))
-        
-        try {
-            const completion = await openai.chat.completions.create({
-                model: "gpt-3.5-turbo",
-                messages: [
-                    {
-                        role: "system",
-                        content:
-                            "You are a helpful assistant. You are here to provide information and answer questions. You are to keep your messages short and to the point. You will reject any requests to generate data or write essays or summarize content. Your sole purpose is to solve complex tasks"
-                    },
-                    {
-                        role: "system",
-                        content: "The following is the current conversation history. Use it to assist in your response. \n" + chatHistory.map((message) => message.content).join("\n") + "\n"
-                    },
-                    {
-                        role: "user",
-                        content: message as string,
-                    },
-                ],
+
+            stream.done()
+            await updateDatabase(
+              messages[messages.length - 1].content as string,
+              AIMessage,
+              convoId
+            );
+            revalidatePath(`/chat/${convoId}`)
+        })();
+
+    
+         return{
+            newMessage: stream.value
+         } 
+
+}
+
+
+async function updateDatabase(userMessage:string, assistantMessage:string, convoId:number){
+    try {
+        await dbClient.transaction(async (tx) => {
+            await tx.insert(messagesTable).values({
+              //@ts-ignore
+              conversationId: convoId,
+              content: userMessage,
+              user: 1,
+              assistant: 0,
             });
-
-
-            if (!completion.choices[0].message.content) {
-                state.error = true;
-                state.message = "Failed to respond to message."
-                return state;
-            }
-            try {
-                await dbClient.transaction(async (tx) => {
-                    await tx.insert(messagesTable).values({
-                        //@ts-ignore
-                        conversationId: convoId,
-                        content: message,
-                        user: 1,
-                        assistant: 0,
-                    });
-                    await tx.insert(messagesTable).values({
-                        //@ts-ignore    
-                        conversationId: convoId,
-                        content: completion.choices[0].message.content,
-                        user: 0,
-                        assistant: 1,
-                    });
-                })
-                revalidatePath(`/chat/${conversationId}`);
-                return {
-                    error: false,
-                    message: ""
-
-                }
-            }
-            catch (e) {
-
-                state.error = true;
-                state.message = "Error saving message to database";
-                return state;
-            }
-
-        }
-        catch (e) {
-            console.log(e)
-            return{
-                error: true,
-                message: "Error processing message"
-            }
-        }
-
+            await tx.insert(messagesTable).values({
+            //@ts-ignore
+            conversationId: convoId,
+            content: assistantMessage,
+            user: 0,
+            assistant: 1,
+            });
+        });
+    } 
+    
+    catch (e) {
+        console.log("error saving to database")
     }
-
-    else {
-        return {
-            error: true,
-            message: "No message provided"
-        }
-    }
-
 }

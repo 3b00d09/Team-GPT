@@ -1,5 +1,7 @@
 import { dbClient } from "@/lib/db/db";
 import { conversationsTable, messagesTable } from "@/lib/db/schema";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -36,13 +38,14 @@ export const POST = async (request: Request) => {
 
         const newMessage = await dbClient.insert(messagesTable).values({
             //@ts-ignore
-            // dunno why this is erroring even though it still works
+            // dunno why this is erroring
             conversationId: newRow[0].newId,
             content: message,
             user: 1,
             assistant: 0,
         }).returning({ newId: messagesTable.id })
 
+        revalidatePath("/", "layout");
         return Response.json({ success: true, id: newRow[0].newId, newMessageId: newMessage[0].newId});
     }
     catch(err){

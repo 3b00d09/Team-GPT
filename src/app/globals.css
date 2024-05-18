@@ -1,6 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 @import 'highlight.js/styles/github.css';
 @font-face {
   font-family: 'OxProto';
@@ -8,6 +5,11 @@
   font-weight: normal;
   font-style: normal;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 
 *{
   margin: 0;
@@ -17,6 +19,76 @@
 
 body{
   font-family: 'OxProto', sans-serif !important;
+}
+
+p{
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+h1, h2, h3, h4, h5, h6{
+  display: block;
+  font-weight: bold;
+}
+
+h1 {
+    font-size: 2em;         
+    margin-top: 0.67em;
+    margin-bottom: 0.67em;
+
+}
+
+h2 {
+    font-size: 1.5em;       
+    margin-top: 0.83em;
+    margin-bottom: 0.83em;
+
+}
+
+h3 {
+    font-size: 1.17em;       
+    margin-top: 1em;
+    margin-bottom: 1em;
+
+}
+
+h4 {
+    font-size: 1em;         
+    margin-top: 1.33em;
+    margin-bottom: 1.33em;
+
+}
+
+h5 {
+    font-size: 0.83em;      
+    margin-top: 1.67em;
+    margin-bottom: 1.67em;
+
+}
+
+h6 {
+    font-size: 0.67em;    
+    margin-top: 2.33em;
+    margin-bottom: 2.33em;
+
+}
+
+
+ul, ol{
+  padding-left: 1.5em;
+}
+
+ul{
+  list-style:square;
+}
+
+ol{
+  list-style: decimal;
+}
+
+li{
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
 }
 
   @layer base {
@@ -91,8 +163,8 @@ body{
     body {
       @apply bg-background text-foreground;
     }
+    
   }
-
 .scrollbar-hidden::-webkit-scrollbar {
     display: none;
 }
@@ -100,4 +172,8 @@ body{
 .scrollbar-hidden {
     -ms-overflow-style: none;  /* Internet Explorer 10+ */
     scrollbar-width: none;  /* Firefox */
+}
+
+.animate-height{
+  transition: height 0.2s ease-in-out;
 }

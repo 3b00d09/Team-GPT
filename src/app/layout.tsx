@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Conversations from "@/lib/components/conversations";
 import "@fortawesome/fontawesome-svg-core/styles.css"
-import { Suspense } from "react";
+import { QueryClientWrapper } from "@/lib/components/QueryClientWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,18 +17,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  
   return (
     <html lang="en">
       <body className={inter.className}>
-        <main className="flex w-screen h-screen overflow-hidden text-white">
-          <Conversations/>
-          <div className="flex-1 bg-[#212121] p-4 flex flex-col relative">
-            <p>GPT 4 Turbo</p>
-            <Suspense fallback={<p>Loading...</p>}>
-              {children}
-            </Suspense>
-          </div>
-      </main>
+
+          <main className="flex w-screen h-screen overflow-hidden text-white">
+            <Conversations/>
+            <div className="flex-1 bg-[#212121] p-4 flex flex-col relative">
+              <p>GPT 4 Turbo</p>
+                <QueryClientWrapper>
+                    {children}
+                </QueryClientWrapper>
+            </div>
+        </main>
       </body>
     </html>
   );

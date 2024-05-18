@@ -1,77 +1,43 @@
-"use client";
+"use client"
+
+import { useEffect} from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { messagesTable } from "../db/schema";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import {faUser, faWheelchairMove} from "@fortawesome/free-solid-svg-icons";
-import { useIntersection } from '@mantine/hooks';
 import Markdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight'
 import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
+import { CoreMessage } from "ai";
 
 
-export default function Messages(props: { messages: typeof messagesTable.$inferSelect[]}) {
-    
-    const lastMessageRef = useRef<HTMLDivElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+type props = {
+    messages: CoreMessage[]
+}
 
-    const {ref, entry} = useIntersection({
-        root: lastMessageRef.current,
-        threshold: 1.0
-    })
+type MessageProps = {
+    message: CoreMessage
+    latest?: boolean
+}
 
-    const navigateToBottom = ()=>{
-        // no shame in good ol' vanilla js (for now)
-        const messagesContainer = document.querySelector("#messages-container")
-        if(messagesContainer){
-            messagesContainer.scrollTo({
-                top: messagesContainer.scrollHeight,
-                behavior: "smooth"
-            })
-        }
-    }
 
-    useEffect(()=>{
-        setTimeout(() => {
-            navigateToBottom()
-        }, props.messages.length * 10);
-    },[])
+export default function Messages(props: props){
 
     return (
-        <div className="flex flex-col items-center mt-12 gap-8" ref={containerRef}>    
+        <div className="flex flex-col items-center mt-12 gap-8">    
             {props.messages.map((message, index) => {
-                if(index === props.messages.length - 1){
-                    return(
-                        <div className="w-3/4" key={index}>
-                            <div ref={ref}></div>
-                            <Message lastMessage={index === props.messages.length} message={message}/> 
-                        </div>
-                        
-                    )
-                }
-                else{
-                    return (
-                        <Message key={index} lastMessage={index === props.messages.length} message={message}/> 
-                    )
-                }
+                return (
+                    <Message key={index} message={message}/> 
+                )
 
             })}
-            {!entry?.isIntersecting && <NavigateToBottom navigateToBottom={navigateToBottom}/>}
-            
         </div>
     );
 }
 
 
-type messageProps = {
-    message: typeof messagesTable.$inferSelect | {content: string, user: boolean},
-    lastMessage: boolean
-
-}
-
-
-export const Message = (props:messageProps) =>{
+export const Message = React.memo(({message, latest}: MessageProps) =>{
     // converting the markdown from server to html on the client causes a hydration error
     // so we'll wait for the component to mount before rendering the markdown
 
@@ -83,23 +49,13 @@ export const Message = (props:messageProps) =>{
 
     if(!hasMounted) return null
     return (
-        <div className="w-3/4">
-            <p className="px-4 py-2 text-base">
-                {props.message.user === true ? <FontAwesomeIcon icon={faUser} /> : <FontAwesomeIcon icon={faWheelchairMove} /> }
+        <div className={!latest ? "w-3/4" : "px-4 py-2 text-base flex flex-col items-center"}>
+            <div className={!latest? "px-4 py-2 text-base" : " w-3/4"}>
+                {message.role === "user" ? <FontAwesomeIcon icon={faUser} /> : <FontAwesomeIcon icon={faWheelchairMove} /> }
                 <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]}>
-                    {props.message.content}
+                    {message.content ? message.content as string : ""}
                 </Markdown>
-            </p>
+            </div>
         </div>
     )
-}
-
-const NavigateToBottom = ({navigateToBottom} : any) => {   
-    return (
-        <div className="fixed bottom-20">
-            <button onClick={navigateToBottom} className="bg-blue-500 text-white p-2 rounded-full">
-                <FontAwesomeIcon icon={faWheelchairMove}/>
-            </button>
-        </div>
-    )
-}
+})
