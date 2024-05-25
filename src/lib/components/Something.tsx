@@ -46,6 +46,7 @@ export default function Something(props: props) {
     const handleFileSubmission = (e: React.MouseEvent<HTMLInputElement>) => {  
         if(fileUploadRef.current){  
             setFile(fileUploadRef.current.files![0])
+            setPreviewImage(URL.createObjectURL(fileUploadRef.current.files![0]))
         }
     }
 
@@ -56,21 +57,24 @@ export default function Something(props: props) {
     }
 
     const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        router.refresh()
         // prevent the scroll btn to spam while we are autoscrolling inside the readStreamableValue loop
         setShowScrollBtn(false)
         e.preventDefault();
         if (inputRef.current) inputRef.current.disabled = true;
 
-        setLatestMessage("");
         // usestate isnt fast enough to update the messages array before the readStreamableValue loop so we'll initiate a new array
         const newMessageContent = inputRef.current?.value || "";
         const newMessages: CoreMessage[] = [
             ...messages,
-            { content: newMessageContent, role: "user" } as CoreMessage
+            { content: newMessageContent, role: "user" } as CoreMessage,
         ];
         setMessages(newMessages);
 
-        const { newMessage } = await sendMessage(newMessages, parseInt(props.params.id));
+        // CANNOT PASS FILES TO SERVER ACTIONS :))))
+        const base64Image = await convertToBase64(file!);
+
+        const { newMessage } = await sendMessage(newMessages, parseInt(props.params.id),{image: base64Image, name:file!.name} );
 
         // append the stream of content to the same string
         let streamedContent = "";
@@ -82,8 +86,13 @@ export default function Something(props: props) {
             navigateToBottom()
         }
 
-        setMessages(newMessages);
+        setMessages([...newMessages, { content: streamedContent, role: "assistant" } as CoreMessage]);
+        setLatestMessage(()=>{
+            navigateToBottom()
+            return ""
+        });
         setShowScrollBtn(true)
+        
 
         if (inputRef.current) {
             inputRef.current.disabled = false;
@@ -91,6 +100,15 @@ export default function Something(props: props) {
             inputRef.current.style.height = "auto";
         }
     };
+
+    function convertToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+    });
+    }
 
     const handleTextareaInput = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         e.currentTarget.style.height = "auto";
@@ -156,7 +174,7 @@ export default function Something(props: props) {
                 <div className="relative flex-grow">
                     <Textarea
                     name="message"
-                    className="p-4 rounded-md bg-transparent border resize-none overflow-auto border-slate-600 text-base w-full animate-height max-h-[10rem]"
+                    className="p-4 pr-10 rounded-md bg-transparent border resize-none overflow-auto border-slate-600 text-base w-full animate-height max-h-[10rem]"
                     placeholder="Message AI..."
                     ref={inputRef}
                     onInput={handleTextareaInput}
@@ -170,7 +188,7 @@ export default function Something(props: props) {
                     />
                     </div>
                     {previewImage && <img src={previewImage} 
-                        className="absolute object-contain bottom-12 right-0 w-28 border border-slate-600"/>}
+                        className="absolute object-contain bottom-[1px] right-[-200px] w-1/4 border border-slate-600"/>}
                 </div>
 
                 <Input

@@ -10,6 +10,7 @@
     "dbpush": "drizzle-kit push:sqlite"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^0.0.15",
     "@ai-sdk/openai": "^0.0.13",
     "@fortawesome/fontawesome-svg-core": "^6.5.2",
     "@fortawesome/free-brands-svg-icons": "^6.5.2",

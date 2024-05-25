@@ -42,7 +42,7 @@ export default async function Page(props: props) {
 
     let stream: StreamableValue<any,any> | null = null;
     if(messageRows.length === 1){
-        const {newMessage} = await sendMessage(messages, parseInt(props.params.id))
+        const {newMessage} = await sendMessage(messages, parseInt(props.params.id), null, true)
         stream = newMessage
     }
 

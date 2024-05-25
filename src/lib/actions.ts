@@ -11,6 +11,7 @@ import { createStreamableValue } from "ai/rsc";
 import { readStreamableValue } from "ai/rsc";
 import { CoreMessage, streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
+import { anthropic } from '@ai-sdk/anthropic';
 
 type sendMessageState = {
     error: boolean
@@ -21,20 +22,53 @@ type sendMessageState = {
 //     apiKey: process.env.OPENAI_KEY,
 // });
 
-export async function sendMessage(messages: CoreMessage[], convoId: number, image?:File | null) {
-    //const image = formData.get("image") as File;
+export async function sendMessage(messages: CoreMessage[], convoId: number, image?:{image:string, name:string} | null, newMessage:boolean = false) {
 
-        // if(image && image.name !== ""){
-        //     try{
-        //         const res = await utapi.uploadFiles(image)
-        //         console.log(res)
-        //     }
-        //     catch(e){
-        //         console.log("failed to upload image")
-        //     }
-        // }
+    let imageFile:File | null = null;
+    let imageUrl:string = "";
+    if(image){
+          const arr = image.image.split(",");
+          const mime = arr[0].match(/:(.*?);/)?.[1];
+          const bstr = atob(arr[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+
+          while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+          }
+          imageFile = new File([u8arr], image.name, { type: mime });
+          try{
+            const res = await utapi.uploadFiles(imageFile)
+            imageUrl = res.data?.url || "";
+          }
+          catch(e){
+            console.log("failed to upload image")
+          }
+    }
 
         const stream = createStreamableValue();
+        // (async()=>{
+        //     const { textStream } = await streamText({
+        //       model: anthropic("claude-3-opus-20240229"),
+        //       messages: messages,
+        //         system: "You are a helpful assistant.",
+        //     });
+
+        //     let AIMessage: string = "";
+        //     for await(const text of textStream){
+        //         stream.update(text);
+        //         AIMessage = AIMessage + text;
+        //     }
+
+        //     stream.done()
+        //     await updateDatabase(
+        //       messages[messages.length - 1].content as string,
+        //       AIMessage,
+        //       convoId,
+        //       newMessage
+        //     );
+        // })();
+
         (async()=>{
             const {textStream} = await streamText({
                 model:openai("gpt-4o-2024-05-13"),
@@ -52,7 +86,8 @@ export async function sendMessage(messages: CoreMessage[], convoId: number, imag
             await updateDatabase(
               messages[messages.length - 1].content as string,
               AIMessage,
-              convoId
+              convoId,
+              newMessage
             );
             revalidatePath(`/chat/${convoId}`)
         })();
@@ -65,24 +100,36 @@ export async function sendMessage(messages: CoreMessage[], convoId: number, imag
 }
 
 
-async function updateDatabase(userMessage:string, assistantMessage:string, convoId:number){
+async function updateDatabase(userMessage:string, assistantMessage:string, convoId:number, newMessage:boolean = false){
     try {
         await dbClient.transaction(async (tx) => {
-            await tx.insert(messagesTable).values({
-              //@ts-ignore
-              conversationId: convoId,
-              content: userMessage,
-              user: 1,
-              assistant: 0,
-            });
-            await tx.insert(messagesTable).values({
-            //@ts-ignore
-            conversationId: convoId,
-            content: assistantMessage,
-            user: 0,
-            assistant: 1,
-            });
+            if(newMessage){
+                await tx.insert(messagesTable).values({
+                    //@ts-ignore
+                    conversationId: convoId,
+                    content: assistantMessage,
+                    user: 0,
+                    assistant: 1,
+                });
+            }
+            else{
+                await tx.insert(messagesTable).values({
+                    //@ts-ignore
+                    conversationId: convoId,
+                    content: userMessage,
+                    user: 1,
+                    assistant: 0,
+                });
+                await tx.insert(messagesTable).values({
+                    //@ts-ignore
+                    conversationId: convoId,
+                    content: assistantMessage,
+                    user: 0,
+                    assistant: 1,
+                });
+            }
         });
+        revalidatePath(`/chat/${convoId}`);
     } 
     
     catch (e) {
