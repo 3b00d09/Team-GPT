@@ -37,7 +37,7 @@ export default function Messages(props: props){
 }
 
 
-export const Message = React.memo(({message, latest}: MessageProps) =>{
+export const Message = ({message, latest}: MessageProps) =>{
     // converting the markdown from server to html on the client causes a hydration error
     // so we'll wait for the component to mount before rendering the markdown
 
@@ -58,4 +58,4 @@ export const Message = React.memo(({message, latest}: MessageProps) =>{
             </div>
         </div>
     )
-})
+}

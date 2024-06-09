@@ -72,9 +72,9 @@ export default function Something(props: props) {
         setMessages(newMessages);
 
         // CANNOT PASS FILES TO SERVER ACTIONS :))))
-        const base64Image = await convertToBase64(file!);
+        //const base64Image = await convertToBase64(file!);
 
-        const { newMessage } = await sendMessage(newMessages, parseInt(props.params.id),{image: base64Image, name:file!.name} );
+        const { newMessage } = await sendMessage(newMessages, parseInt(props.params.id));
 
         // append the stream of content to the same string
         let streamedContent = "";

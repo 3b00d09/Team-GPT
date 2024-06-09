@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { dbClient } from "./db/db";
 import { messagesTable } from "./db/schema";
 import { eq } from "drizzle-orm";
-import OpenAI from "openai";
 import { utapi } from "./uploadthing";
 
 import { createStreamableValue } from "ai/rsc";
@@ -73,7 +72,7 @@ export async function sendMessage(messages: CoreMessage[], convoId: number, imag
             const {textStream} = await streamText({
                 model:openai("gpt-4o-2024-05-13"),
                 messages: messages,
-                system:"You are a helpful assistant."
+                system:"You are a helpful assistant.",
             })
 
             let AIMessage: string = "";

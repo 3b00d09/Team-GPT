@@ -12,7 +12,7 @@ export default function Home() {
     const message = formData.get("message");
       if (message) {
 
-          const req = await fetch("http://localhost:3000/api/create-convo", {
+          const req = await fetch("/api/create-convo", {
               method: "POST",
               body: JSON.stringify({ content: message }),
               headers: {
