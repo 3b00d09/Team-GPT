@@ -8,7 +8,7 @@ import { utapi } from "./uploadthing";
 
 import { createStreamableValue } from "ai/rsc";
 import { readStreamableValue } from "ai/rsc";
-import { CoreMessage, streamText } from "ai";
+import { CoreMessage, ImagePart, streamText, UserContent } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from '@ai-sdk/anthropic';
 
@@ -23,57 +23,50 @@ type sendMessageState = {
 
 export async function sendMessage(messages: CoreMessage[], convoId: number, image?:{image:string, name:string} | null, newMessage:boolean = false) {
 
-    let imageFile:File | null = null;
-    let imageUrl:string = "";
-    if(image){
-          const arr = image.image.split(",");
-          const mime = arr[0].match(/:(.*?);/)?.[1];
-          const bstr = atob(arr[1]);
-          let n = bstr.length;
-          const u8arr = new Uint8Array(n);
+    let imageUrl: URL | null = null
+    let imageFile: File | null = null;
+    if (image && image.image) {
+        try {
+            const [header, base64Data] = image.image.split(",");
+            const mime = header.match(/:(.*?);/)?.[1];
 
-          while (n--) {
-            u8arr[n] = bstr.charCodeAt(n);
-          }
-          imageFile = new File([u8arr], image.name, { type: mime });
-          try{
-            const res = await utapi.uploadFiles(imageFile)
-            imageUrl = res.data?.url || "";
-          }
-          catch(e){
-            console.log("failed to upload image")
-          }
+            if (!mime) {
+                throw new Error("Invalid MIME type");
+            }
+
+            const binaryData = Buffer.from(base64Data, "base64");
+            imageFile = new File([binaryData], image.name, { type: mime });
+
+            const res = await utapi.uploadFiles(imageFile);
+            if(res.data && res.data.url) imageUrl = new URL(res.data.url);
+        } 
+        catch (e) {
+            console.error("Failed to upload image:", e);
+        }
+    }else{
+        console.log("safe?")
     }
 
+
+        // this array of content will hold the image for us in case we have one
+        const customContent : ImagePart[] = [];
+
+        if(imageUrl){
+            customContent.push({ type: "image" , image: imageUrl});
+        }
         const stream = createStreamableValue();
-        // (async()=>{
-        //     const { textStream } = await streamText({
-        //       model: anthropic("claude-3-opus-20240229"),
-        //       messages: messages,
-        //         system: "You are a helpful assistant.",
-        //     });
-
-        //     let AIMessage: string = "";
-        //     for await(const text of textStream){
-        //         stream.update(text);
-        //         AIMessage = AIMessage + text;
-        //     }
-
-        //     stream.done()
-        //     await updateDatabase(
-        //       messages[messages.length - 1].content as string,
-        //       AIMessage,
-        //       convoId,
-        //       newMessage
-        //     );
-        // })();
-
         (async()=>{
-            const {textStream} = await streamText({
-                model:openai("gpt-4o-2024-05-13"),
-                messages: messages,
-                system:"You are a helpful assistant.",
-            })
+            const { textStream } = await streamText({
+              model: openai("gpt-4o-2024-05-13"),
+              messages: [
+                ...messages,
+                {
+                  role: "user",
+                  content: [...customContent],
+                },
+              ],
+              system: "You are a helpful assistant.",
+            });
 
             let AIMessage: string = "";
             for await(const text of textStream){
@@ -135,3 +128,25 @@ async function updateDatabase(userMessage:string, assistantMessage:string, convo
         console.log("error saving to database")
     }
 }
+
+// (async()=>{
+//     const { textStream } = await streamText({
+//       model: anthropic("claude-3-opus-20240229"),
+//       messages: messages,
+//         system: "You are a helpful assistant.",
+//     });
+
+//     let AIMessage: string = "";
+//     for await(const text of textStream){
+//         stream.update(text);
+//         AIMessage = AIMessage + text;
+//     }
+
+//     stream.done()
+//     await updateDatabase(
+//       messages[messages.length - 1].content as string,
+//       AIMessage,
+//       convoId,
+//       newMessage
+//     );
+// })();

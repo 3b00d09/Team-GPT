@@ -25,12 +25,12 @@ export default async function Page(props: props) {
     const messages:CoreMessage[] = messageRows.map((message)=>{
         //https://github.com/remarkjs/react-markdown/issues/785#issuecomment-1966495891
         message.content = message.content.replace(
-            /\\\[(.*?)\\\]/gs,
+            /\\\[(.*?)\\\]/g,
             (_, equation) => `$$${equation}$$`,
         );
 
         message.content = message.content.replace(
-            /\\\((.*?)\\\)/gs,
+            /\\\((.*?)\\\)/g,
             (_, equation) => `$${equation}$`
         )
 

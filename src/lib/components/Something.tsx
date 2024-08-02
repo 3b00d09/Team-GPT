@@ -72,9 +72,12 @@ export default function Something(props: props) {
         setMessages(newMessages);
 
         // CANNOT PASS FILES TO SERVER ACTIONS :))))
-        //const base64Image = await convertToBase64(file!);
+        let base64Image = ""
+        if(file){
+            base64Image = await convertToBase64(file)
+        }
 
-        const { newMessage } = await sendMessage(newMessages, parseInt(props.params.id));
+        const { newMessage } = await sendMessage(newMessages, parseInt(props.params.id), base64Image && file ? {image: base64Image, name: file.name} : null, false);
 
         // append the stream of content to the same string
         let streamedContent = "";
@@ -98,6 +101,8 @@ export default function Something(props: props) {
             inputRef.current.disabled = false;
             inputRef.current.value = "";
             inputRef.current.style.height = "auto";
+            setFile(null)
+            setPreviewImage("")
         }
     };
 
