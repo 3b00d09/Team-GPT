@@ -8,6 +8,7 @@ import {eq} from "drizzle-orm";
 import { CoreMessage } from "ai";
 import { sendMessage } from "@/lib/actions";
 import { StreamableValue } from "ai/rsc";
+import { messageRow } from "@/lib/db/schemaTypes";
 
 
 type props = {
@@ -22,27 +23,29 @@ export default async function Page(props: props) {
 
     const messageRows = await dbClient.select().from(messagesTable).where(eq(messagesTable.conversationId, parseInt(props.params.id)))
 
-    const messages:CoreMessage[] = messageRows.map((message)=>{
-        //https://github.com/remarkjs/react-markdown/issues/785#issuecomment-1966495891
-        message.content = message.content.replace(
-            /\\\[(.*?)\\\]/g,
-            (_, equation) => `$$${equation}$$`,
-        );
+    const messages: messageRow[] = messageRows.map((message) => {
+      //https://github.com/remarkjs/react-markdown/issues/785#issuecomment-1966495891
+      message.content = message.content.replace(
+        /\\\[(.*?)\\\]/g,
+        (_, equation) => `$$${equation}$$`
+      );
 
-        message.content = message.content.replace(
-            /\\\((.*?)\\\)/g,
-            (_, equation) => `$${equation}$`
-        )
+      message.content = message.content.replace(
+        /\\\((.*?)\\\)/g,
+        (_, equation) => `$${equation}$`
+      );
 
-        return {
-            content:message.content,
-            role:message.user ? "user" : "assistant"
-        }
-    })
+      return message
+    });
 
     let stream: StreamableValue<any,any> | null = null;
     if(messageRows.length === 1){
-        const {newMessage} = await sendMessage(messages, parseInt(props.params.id), null, true)
+        const { newMessage } = await sendMessage(
+          messageRows,
+          parseInt(props.params.id),
+          null,
+          true
+        );
         stream = newMessage
     }
 

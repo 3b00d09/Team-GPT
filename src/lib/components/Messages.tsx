@@ -10,20 +10,23 @@ import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 import { CoreMessage } from "ai";
-
+import { messagesTable } from "../db/schema";
 
 type props = {
-    messages: CoreMessage[]
+  messages: typeof messagesTable.$inferSelect[];
+};
+
+type latestMessage = {
+    content: string,
 }
 
 type MessageProps = {
-    message: CoreMessage
+    message: typeof messagesTable.$inferSelect;
     latest?: boolean
 }
 
 
 export default function Messages(props: props){
-
     return (
         <div className="flex flex-col items-center mt-12 gap-8">    
             {props.messages.map((message, index) => {
@@ -49,13 +52,45 @@ export const Message = ({message, latest}: MessageProps) =>{
 
     if(!hasMounted) return null
     return (
-        <div className={!latest ? "w-3/4" : "px-4 py-2 text-base flex flex-col items-center"}>
-            <div className={!latest? "px-4 py-2 text-base" : " w-3/4"}>
-                {message.role === "user" ? <FontAwesomeIcon icon={faUser} /> : <FontAwesomeIcon icon={faWheelchairMove} /> }
-                <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]}>
-                    {message.content ? message.content as string : ""}
-                </Markdown>
-            </div>
+      <div
+        className={
+          "w-3/4" 
+        }
+      >
+        <div className={"px-4 py-2 text-base" }>
+          {message.user ? (
+            <FontAwesomeIcon icon={faUser} />
+          ) : (
+            <FontAwesomeIcon icon={faWheelchairMove} />
+          )}
+          <Markdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex, rehypeHighlight]}
+          >
+            {message.content ? (message.content as string) : ""}
+          </Markdown>
         </div>
-    )
+        {message.imageUrl && <img src={message.imageUrl} className="w-48 object-contain" alt="" />}
+      </div>
+    );
 }
+
+export const LatestMessage = ({ content }: latestMessage) => {
+  return (
+    <div
+      className={
+        "px-4 py-2 text-base flex flex-col items-center"
+      }
+    >
+      <div className={" w-3/4"}>
+        <FontAwesomeIcon icon={faWheelchairMove} />
+        <Markdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex, rehypeHighlight]}
+        >
+          {content ? (content as string) : ""}
+        </Markdown>
+      </div>
+    </div>
+  );
+};

@@ -1,10 +1,4 @@
 @import 'highlight.js/styles/github.css';
-@font-face {
-  font-family: 'OxProto';
-  src: url('/fonts/OxProto-Regular.otf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
-}
 
 @tailwind base;
 @tailwind components;

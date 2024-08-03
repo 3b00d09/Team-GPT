@@ -3,28 +3,30 @@
 import { revalidatePath } from "next/cache";
 import { dbClient } from "./db/db";
 import { messagesTable } from "./db/schema";
-import { eq } from "drizzle-orm";
 import { utapi } from "./uploadthing";
 
 import { createStreamableValue } from "ai/rsc";
-import { readStreamableValue } from "ai/rsc";
 import { CoreMessage, ImagePart, streamText, UserContent } from "ai";
 import { openai } from "@ai-sdk/openai";
-import { anthropic } from '@ai-sdk/anthropic';
+import { messageRow } from "./db/schemaTypes";
 
-type sendMessageState = {
-    error: boolean
-    message: string;
-}
 
 // const openai = new OpenAI({
 //     apiKey: process.env.OPENAI_KEY,
 // });
 
-export async function sendMessage(messages: CoreMessage[], convoId: number, image?:{image:string, name:string} | null, newMessage:boolean = false) {
+export async function sendMessage(messages: messageRow[], convoId: number, image?:{image:string, name:string} | null, newMessage:boolean = false) {
 
     let imageUrl: URL | null = null
     let imageFile: File | null = null;
+    const coreMessages: CoreMessage[] = messages.map((message) => {
+        return {
+            content: message.content,
+            role: message.user ? "user" : "assistant",
+        }
+    }
+    )
+
     if (image && image.image) {
         try {
             const [header, base64Data] = image.image.split(",");
@@ -43,10 +45,7 @@ export async function sendMessage(messages: CoreMessage[], convoId: number, imag
         catch (e) {
             console.error("Failed to upload image:", e);
         }
-    }else{
-        console.log("safe?")
     }
-
 
         // this array of content will hold the image for us in case we have one
         const customContent : ImagePart[] = [];
@@ -59,7 +58,7 @@ export async function sendMessage(messages: CoreMessage[], convoId: number, imag
             const { textStream } = await streamText({
               model: openai("gpt-4o-2024-05-13"),
               messages: [
-                ...messages,
+                ...coreMessages,
                 {
                   role: "user",
                   content: [...customContent],
@@ -77,6 +76,7 @@ export async function sendMessage(messages: CoreMessage[], convoId: number, imag
             stream.done()
             await updateDatabase(
               messages[messages.length - 1].content as string,
+              imageUrl ? imageUrl.href : "",
               AIMessage,
               convoId,
               newMessage
@@ -92,7 +92,7 @@ export async function sendMessage(messages: CoreMessage[], convoId: number, imag
 }
 
 
-async function updateDatabase(userMessage:string, assistantMessage:string, convoId:number, newMessage:boolean = false){
+async function updateDatabase(userMessage:string, imageUrl:string, assistantMessage:string, convoId:number, newMessage:boolean = false){
     try {
         await dbClient.transaction(async (tx) => {
             if(newMessage){
@@ -100,17 +100,19 @@ async function updateDatabase(userMessage:string, assistantMessage:string, convo
                     //@ts-ignore
                     conversationId: convoId,
                     content: assistantMessage,
+                    imageUrl: imageUrl,
                     user: 0,
                     assistant: 1,
                 });
             }
             else{
                 await tx.insert(messagesTable).values({
-                    //@ts-ignore
-                    conversationId: convoId,
-                    content: userMessage,
-                    user: 1,
-                    assistant: 0,
+                  //@ts-ignore
+                  conversationId: convoId,
+                  content: userMessage,
+                  imageUrl: imageUrl,
+                  user: 1,
+                  assistant: 0,
                 });
                 await tx.insert(messagesTable).values({
                     //@ts-ignore

@@ -6,20 +6,20 @@ import React, { useEffect, useState } from "react";
 import { sendMessage } from "../actions";
 import { useRef } from "react";
 import Messages from "@/lib/components/Messages";
-import  {Message}  from "@/lib/components/Messages";
 import { faArrowUpFromBracket, faWheelchairMove } from "@fortawesome/free-solid-svg-icons";
-import { CoreMessage } from "ai";
 import { StreamableValue, readStreamableValue } from 'ai/rsc';
 import { useIntersection } from "@mantine/hooks";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
+import { messageRow } from "../db/schemaTypes";
+import { LatestMessage } from "@/lib/components/Messages";
 
 type props = {
     params:{
         id: string
     },
     searchParams: { [key: string]: string | undefined } ,
-    messages: CoreMessage[],
+    messages: messageRow[],
     stream?: StreamableValue<any,any> | null
 
 }
@@ -27,13 +27,14 @@ type props = {
 export default function Something(props: props) {  
 
     const router = useRouter();
-    const [messages, setMessages] = useState<CoreMessage[]>(props.messages)
+    const [messages, setMessages] = useState<messageRow[]>(props.messages)
     const [file, setFile] = useState<File | null>(null)
     const [showScrollBtn, setShowScrollBtn] = useState<boolean>(true)
     const [previewImage, setPreviewImage] = useState<string>("")
     const [latestMessage, setLatestMessage] = useState<string>("")
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const messagesContainer = useRef<HTMLDivElement>(null);
     const chatForm = useRef<HTMLFormElement>(null);
     const mainContainer = useRef<HTMLDivElement>(null);
     const fileUploadRef = useRef<HTMLInputElement>(null);
@@ -57,53 +58,69 @@ export default function Something(props: props) {
     }
 
     const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        router.refresh()
-        // prevent the scroll btn to spam while we are autoscrolling inside the readStreamableValue loop
-        setShowScrollBtn(false)
-        e.preventDefault();
-        if (inputRef.current) inputRef.current.disabled = true;
+      router.refresh();
+      // prevent the scroll btn to spam while we are autoscrolling inside the readStreamableValue loop
+      setShowScrollBtn(false);
+      e.preventDefault();
+      if (inputRef.current) inputRef.current.disabled = true;
 
-        // usestate isnt fast enough to update the messages array before the readStreamableValue loop so we'll initiate a new array
-        const newMessageContent = inputRef.current?.value || "";
-        const newMessages: CoreMessage[] = [
-            ...messages,
-            { content: newMessageContent, role: "user" } as CoreMessage,
-        ];
-        setMessages(newMessages);
+      // usestate isnt fast enough to update the messages array before the readStreamableValue loop so we'll initiate a new array
+      const newMessageContent = inputRef.current?.value || "";
+      // id is irrelevant here so i just put something random
+      const newMsg = {
+        content: newMessageContent,
+        user: true,
+        assistant: false,
+        conversationId: parseInt(props.params.id),
+        id: messages.length + 1,
+        createdAt: null,
+        imageUrl: null,
+      };
+      const newMessages: messageRow[] = [...messages, newMsg];
+      setMessages(newMessages);
 
-        // CANNOT PASS FILES TO SERVER ACTIONS :))))
-        let base64Image = ""
-        if(file){
-            base64Image = await convertToBase64(file)
-        }
+      // CANNOT PASS FILES TO SERVER ACTIONS :))))
+      let base64Image = "";
+      if (file) {
+        base64Image = await convertToBase64(file);
+      }
 
-        const { newMessage } = await sendMessage(newMessages, parseInt(props.params.id), base64Image && file ? {image: base64Image, name: file.name} : null, false);
+      const { newMessage } = await sendMessage(
+        newMessages,
+        parseInt(props.params.id),
+        base64Image && file ? { image: base64Image, name: file.name } : null,
+        false
+      );
 
-        // append the stream of content to the same string
-        let streamedContent = "";
-        for await (const content of readStreamableValue(newMessage)) {
-            streamedContent += content;
-            setLatestMessage((prev) => prev + content);
-            
-            // autoscroll to the bottom of the chat
-            navigateToBottom()
-        }
+      // append the stream of content to the same string
+      let streamedContent = "";
+      for await (const content of readStreamableValue(newMessage)) {
+        streamedContent += content;
+        setLatestMessage((prev) => prev + content);
+      }
 
-        setMessages([...newMessages, { content: streamedContent, role: "assistant" } as CoreMessage]);
-        setLatestMessage(()=>{
-            navigateToBottom()
-            return ""
-        });
-        setShowScrollBtn(true)
-        
+      const AiMessage: messageRow = {
+        content: streamedContent,
+        user: false,
+        assistant: true,
+        conversationId: parseInt(props.params.id),
+        id: messages.length + 2,
+        createdAt: null,
+        imageUrl: null,
+      };
+        setMessages([...newMessages, AiMessage]);
+      setLatestMessage("");
+    
+    
+      setShowScrollBtn(true);
 
-        if (inputRef.current) {
-            inputRef.current.disabled = false;
-            inputRef.current.value = "";
-            inputRef.current.style.height = "auto";
-            setFile(null)
-            setPreviewImage("")
-        }
+      if (inputRef.current) {
+        inputRef.current.disabled = false;
+        inputRef.current.value = "";
+        inputRef.current.style.height = "auto";
+        setFile(null);
+        setPreviewImage("");
+      }
     };
 
     function convertToBase64(file: File): Promise<string> {
@@ -129,10 +146,9 @@ export default function Something(props: props) {
 
     const navigateToBottom = ()=>{
         // no shame in good ol' vanilla js (for now)
-        const messagesContainer = document.querySelector("#messages-container")
-        if(messagesContainer){
-            messagesContainer.scrollTo({
-                top: messagesContainer.scrollHeight,
+        if(messagesContainer && messagesContainer.current){
+            messagesContainer.current.scrollTo({
+                top: messagesContainer.current.scrollHeight,
                 behavior: "smooth"
             })
         }
@@ -147,12 +163,22 @@ export default function Something(props: props) {
                     streamedContent += content;
                     setLatestMessage((prev) => prev + content);
                 }
-
-                router.refresh();
+                const AiMessage: messageRow = {
+                    content: streamedContent,
+                    user: false,
+                    assistant: true,
+                    conversationId: parseInt(props.params.id),
+                    id: 1,
+                    createdAt: null,
+                    imageUrl: null,
+                };
+                setMessages([props.messages[0], AiMessage]);
+                setLatestMessage("");
             })()
         }
     },[])
         
+
     // autoscroll to the bottom of the chat on first render
     useEffect(()=>{
         setTimeout(() => {
@@ -160,56 +186,94 @@ export default function Something(props: props) {
         }, props.messages.length * 10);
     },[])
 
+
+
+     const timeoutRef = useRef<number|null>(null)
+     // claude did this for me :D
+     // debounce limits how many times the function is called so we dont spam scroll
+     useEffect(() => {
+    if(latestMessage.length === 0) return;
+       const debouncedNavigateToBottom = () => {
+         if (timeoutRef.current) {
+           clearTimeout(timeoutRef.current);
+         }
+
+         timeoutRef.current = window.setTimeout(() => {
+           navigateToBottom();
+           timeoutRef.current = null;
+         }, 50);
+       };
+
+       debouncedNavigateToBottom();
+
+       return () => {
+         if (timeoutRef.current) {
+           clearTimeout(timeoutRef.current);
+         }
+       };
+     }, [messagesContainer.current?.scrollHeight]);
+
+
     return (
-        <div className="grid flex-1 grid-rows-[10fr_1fr] overflow-y-auto" ref={mainContainer}>
+      <div
+        className="grid flex-1 grid-rows-[10fr_1fr] overflow-y-auto"
+        ref={mainContainer}
+      >
+        <div className="overflow-auto" id="messages-container" ref={messagesContainer}>
+          <Messages messages={messages} />
 
-            <div className="overflow-auto" id="messages-container">
-                <Messages messages={messages}/>
-
-                {latestMessage.length > 0 &&
-                    <Message message={{content: latestMessage, role: "assistant"}} latest={true}/>
-                }
-                <div ref={ref} className="h-[1px]"></div>
-            </div>
-
-            
-            {!entry?.isIntersecting && showScrollBtn && <NavigateToBottom navigateToBottom={navigateToBottom}/>}
-
-            <form className="flex self-end justify-self-center w-1/2" onSubmit={handleFormSubmit} ref={chatForm}>
-                <div className="relative flex-grow">
-                    <Textarea
-                    name="message"
-                    className="p-4 pr-10 rounded-md bg-transparent border resize-none overflow-auto border-slate-600 text-base w-full animate-height max-h-[10rem]"
-                    placeholder="Message AI..."
-                    ref={inputRef}
-                    onInput={handleTextareaInput}
-                    onKeyUp={checkTextareaSubmit}
-                    />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <FontAwesomeIcon
-                        icon={faArrowUpFromBracket}
-                        className="text-lg text-gray-400 z-10 pointer-events-auto cursor-pointer hover:text-gray-600"
-                        onClick={forwardFileEvent}
-                    />
-                    </div>
-                    {previewImage && <img src={previewImage} 
-                        className="absolute object-contain bottom-[1px] right-[-200px] w-1/4 border border-slate-600"/>}
-                </div>
-
-                <Input
-                    onInput={handleFileSubmission}
-                    ref={fileUploadRef}
-                    name="image"
-                    type="file"
-                    accept="image/png, image/jpg, image/jpeg"
-                    className="hidden"
-                />
-
-                <button className="hidden" type="submit">Send</button>
-                
-            </form>
+          {/* ai message that is being streamed in shows here */}
+          {latestMessage.length > 0 && <LatestMessage content={latestMessage}/>}
+          <div ref={ref} className="h-[1px]"></div>
         </div>
-            
+
+        {!entry?.isIntersecting && showScrollBtn && (
+          <NavigateToBottom navigateToBottom={navigateToBottom} />
+        )}
+
+        <form
+          className="flex self-end justify-self-center w-1/2"
+          onSubmit={handleFormSubmit}
+          ref={chatForm}
+        >
+          <div className="relative flex-grow">
+            <Textarea
+              name="message"
+              className="p-4 pr-10 rounded-md bg-transparent border resize-none overflow-auto border-slate-600 text-base w-full animate-height max-h-[10rem]"
+              placeholder="Message AI..."
+              ref={inputRef}
+              onInput={handleTextareaInput}
+              onKeyUp={checkTextareaSubmit}
+            />
+            <div className="absolute bottom-2 right-0 pr-3 flex items-center pointer-events-none">
+              <FontAwesomeIcon
+                icon={faArrowUpFromBracket}
+                className="text-lg text-gray-400 z-10 pointer-events-auto cursor-pointer hover:text-gray-600"
+                onClick={forwardFileEvent}
+              />
+            </div>
+            {previewImage && (
+              <img
+                src={previewImage}
+                className="absolute object-contain top-[0px] left-[-45px] w-12 border border-slate-600"
+              />
+            )}
+          </div>
+
+          <Input
+            onInput={handleFileSubmission}
+            ref={fileUploadRef}
+            name="image"
+            type="file"
+            accept="image/png, image/jpg, image/jpeg"
+            className="hidden"
+          />
+
+          <button className="hidden" type="submit">
+            Send
+          </button>
+        </form>
+      </div>
     );
 }   
 
