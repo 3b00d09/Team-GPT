@@ -17,6 +17,7 @@ export const messagesTable = sqliteTable('messages', {
   id: integer('id').primaryKey(),
   conversationId: integer('conversation_id').notNull().references(() => conversationsTable.id,{onDelete:"cascade"}),
   content: text('content').notNull(),
+  imageUrl: text('image_url'),
   createdAt: integer('created_at',{mode:"timestamp"}).$default(()=>{
     return new Date
   }),
