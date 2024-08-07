@@ -82,7 +82,7 @@ async function signup(_: any, formData: FormData): Promise<ActionResult> {
     password.length > 255
   ) {
     return {
-      error: "Invalid password",
+      error: "Invalid password. Please ensure the password is between 6 and 255 characters long",
     };
   }
 

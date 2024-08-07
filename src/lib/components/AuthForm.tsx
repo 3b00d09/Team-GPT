@@ -19,7 +19,7 @@ export function AuthForm({
     >
       {children}
       {state.error && (
-        <p className="bg-red-500 rounded-md p-2">{state.error}</p>
+        <p className="bg-red-900 rounded-md p-2 w-1/2 text-wrap text-center">{state.error}</p>
       )}
     </form>
   );
