@@ -22,14 +22,39 @@ export default async function Page() {
       <h1>Create an account</h1>
       <AuthForm action={signup}>
         <label htmlFor="username">Username</label>
-        <input name="username" id="username" />
-        <br />
+        <input
+          name="username"
+          id="username"
+          className="text-black p-2 rounded-md"
+        />
         <label htmlFor="password">Password</label>
-        <input type="password" name="password" id="password" />
-        <br />
-        <button>Continue</button>
+        <input
+          type="password"
+          name="password"
+          id="password"
+          className="text-black p-2 rounded-md"
+        />
+        <label htmlFor="repeat-password">Repeat Password</label>
+        <input
+          type="password"
+          name="repeat-password"
+          id="repeat-password"
+          className="text-black p-2 rounded-md"
+        />
+        <label htmlFor="invite-token">Invite Token</label>
+        <input
+          type="password"
+          name="invite-token"
+          id="invite-token"
+          className="text-black p-2 rounded-md"
+        />
+        <button className="p-2 rounded-md bg-secondary w-full mt-2">
+          Register
+        </button>
       </AuthForm>
-      <Link href="/login">Sign in</Link>
+      <Link href="/login" className="p-2 text-sm mt-2 text-center">
+        Existing user? Login
+      </Link>
     </>
   );
 }
@@ -50,6 +75,7 @@ async function signup(_: any, formData: FormData): Promise<ActionResult> {
     };
   }
   const password = formData.get("password");
+  const passwordRepeat = formData.get("repeat-password");
   if (
     typeof password !== "string" ||
     password.length < 6 ||
@@ -57,6 +83,21 @@ async function signup(_: any, formData: FormData): Promise<ActionResult> {
   ) {
     return {
       error: "Invalid password",
+    };
+  }
+
+  if (password !== passwordRepeat) {
+    return {
+      error: "Passwords do not match",
+    };
+  }
+
+  const inviteToken = formData.get("invite-token");
+  const INVITE_SECRET = process.env.INVITE_SECRET;
+
+  if (inviteToken !== INVITE_SECRET) {
+    return {
+      error: "Invalid invite token",
     };
   }
 

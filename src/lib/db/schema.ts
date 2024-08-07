@@ -20,6 +20,9 @@ export const conversationsTable = sqliteTable("conversations", {
   createdAt: integer("created_at", { mode: "timestamp" }).$default(() => {
     return new Date();
   }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
 });
 
 export const messagesTable = sqliteTable("messages", {

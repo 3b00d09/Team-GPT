@@ -13,9 +13,14 @@ export function AuthForm({
     error: null,
   });
   return (
-    <form action={formAction}>
+    <form
+      action={formAction}
+      className="flex flex-col justify-center items-center gap-2"
+    >
       {children}
-      <p>{state.error}</p>
+      {state.error && (
+        <p className="bg-red-500 rounded-md p-2">{state.error}</p>
+      )}
     </form>
   );
 }

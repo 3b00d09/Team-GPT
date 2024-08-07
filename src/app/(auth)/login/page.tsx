@@ -19,17 +19,31 @@ export default async function Page() {
   }
   return (
     <>
-      <h1>Sign in</h1>
+      <h1>Login</h1>
       <AuthForm action={login}>
         <label htmlFor="username">Username</label>
-        <input className="text-black" name="username" id="username" />
-        <br />
+        <input
+          className="text-black p-2 rounded-md"
+          name="username"
+          id="username"
+        />
         <label htmlFor="password">Password</label>
-        <input className="text-black" type="password" name="password" id="password" />
-        <br />
-        <button>Continue</button>
+        <input
+          className="text-black p-2 rounded-md"
+          type="password"
+          name="password"
+          id="password"
+        />
+        <button className="p-2 rounded-md bg-secondary w-full">
+          Login
+        </button>
+        <Link
+          href="/register"
+          className="p-2 text-sm w-full mt-2 text-center"
+        >
+          New user? Register
+        </Link>
       </AuthForm>
-      <Link href="/signup">Create an account</Link>
     </>
   );
 }
