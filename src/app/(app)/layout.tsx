@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "./globals.css";
+import "../../app/globals.css";
 import Conversations from "@/lib/components/conversations";
 import "@fortawesome/fontawesome-svg-core/styles.css"
 import { QueryClientWrapper } from "@/lib/components/QueryClientWrapper";
