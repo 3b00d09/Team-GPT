@@ -1,3 +1,4 @@
+import { validateRequest } from "@/lib/auth/auth";
 import { dbClient } from "@/lib/db/db";
 import { conversationsTable, messagesTable } from "@/lib/db/schema";
 import { revalidatePath } from "next/cache";
@@ -9,6 +10,11 @@ apiKey: process.env.OPENAI_KEY,
 });
 
 export const POST = async (request: Request) => {
+    const { user } = await validateRequest();
+    if (!user) {
+      return redirect("/login");
+    }
+    
     const data = await request.json();
     const message = data.content;
 
@@ -34,6 +40,7 @@ export const POST = async (request: Request) => {
     try{
         const newRow = await dbClient.insert(conversationsTable).values({
             description: convoTopic,
+            userId: user.id,
         }).returning({ newId: conversationsTable.id })
 
         const newMessage = await dbClient.insert(messagesTable).values({

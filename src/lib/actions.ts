@@ -9,6 +9,8 @@ import { createStreamableValue } from "ai/rsc";
 import { CoreMessage, ImagePart, streamText, UserContent } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { messageRow } from "./db/schemaTypes";
+import { validateRequest } from "./auth/auth";
+import { redirect } from "next/navigation";
 
 
 // const openai = new OpenAI({
@@ -17,6 +19,11 @@ import { messageRow } from "./db/schemaTypes";
 
 export async function sendMessage(messages: messageRow[], convoId: number, image?:{image:string, name:string} | null, newMessage:boolean = false) {
 
+    const {user} = await validateRequest();
+    if(!user){
+        return redirect("/login");
+    }
+    
     let imageUrl: URL | null = null
     let imageFile: File | null = null;
     const coreMessages: CoreMessage[] = messages.map((message) => {

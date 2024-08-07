@@ -8,7 +8,7 @@ export const usersTable = sqliteTable("user", {
 
 export const userSessionsTable = sqliteTable("session", {
   id: text("id").primaryKey().notNull(),
-  userId: integer("user_id")
+  userId: text("user_id")
     .notNull()
     .references(() => usersTable.id, { onDelete: "cascade" }),
   expiresAt: integer("expires_at").notNull(),
@@ -20,7 +20,7 @@ export const conversationsTable = sqliteTable("conversations", {
   createdAt: integer("created_at", { mode: "timestamp" }).$default(() => {
     return new Date();
   }),
-  userId: integer("user_id")
+  userId: text("user_id")
     .notNull()
     .references(() => usersTable.id, { onDelete: "cascade" }),
 });

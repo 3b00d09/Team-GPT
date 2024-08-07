@@ -124,7 +124,6 @@ async function signup(_: any, formData: FormData): Promise<ActionResult> {
       sessionCookie.attributes
     );
   } catch (e) {
-    console.log(e)
     if (e instanceof SqliteError && e.code === "SQLITE_CONSTRAINT_UNIQUE") {
       return {
         error: "Username already used",
