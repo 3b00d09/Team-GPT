@@ -31,20 +31,20 @@ export default function Home() {
   }
   return (
     <div className="flex-1 flex flex-col justify-between">
-        <div className="flex-1 grid place-items-center">
-            A bunch of stuff here?
-        </div>
-        <form className="self-center w-1/2" action={createConversation}>
-            <Input 
-                ref={inputRef}
-                name="message"
-                className="w-full p-4 rounded-lg bg-transparent border border-slate-600" 
-                placeholder="Message ChatGPT..." 
-                type="text" 
-                >
-            </Input>
-        </form>
+      <div className="flex-1 grid place-items-center">
+        A bunch of stuff here?
       </div>
+      <form className="self-center w-1/2" action={createConversation}>
+        <Input
+          ref={inputRef}
+          name="message"
+          className="w-full p-4 rounded-lg bg-transparent border border-slate-600"
+          placeholder="Message ChatGPT..."
+          autoComplete="off"
+          type="text"
+        ></Input>
+      </form>
+    </div>
   );
 }
   

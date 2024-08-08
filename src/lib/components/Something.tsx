@@ -244,6 +244,7 @@ export default function Something(props: props) {
               ref={inputRef}
               onInput={handleTextareaInput}
               onKeyUp={checkTextareaSubmit}
+              autoComplete="off"
             />
             <div className="absolute bottom-2 right-0 pr-3 flex items-center pointer-events-none">
               <FontAwesomeIcon
