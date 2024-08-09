@@ -6,7 +6,7 @@ import React, { useEffect, useState } from "react";
 import { sendMessage } from "../actions";
 import { useRef } from "react";
 import Messages from "@/lib/components/Messages";
-import { faArrowUpFromBracket, faWheelchairMove } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUpFromBracket, faWheelchairMove, faBan } from "@fortawesome/free-solid-svg-icons";
 import { StreamableValue, readStreamableValue } from 'ai/rsc';
 import { useIntersection } from "@mantine/hooks";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +99,7 @@ export default function Something(props: props) {
         setLatestMessage((prev) => prev + content);
       }
 
+
       const AiMessage: messageRow = {
         content: streamedContent,
         user: false,
@@ -108,7 +109,7 @@ export default function Something(props: props) {
         createdAt: null,
         imageUrl: null,
       };
-        setMessages([...newMessages, AiMessage]);
+      setMessages([...newMessages, AiMessage]);
       setLatestMessage("");
     
     
@@ -219,11 +220,17 @@ export default function Something(props: props) {
         className="grid flex-1 grid-rows-[10fr_1fr] overflow-y-auto"
         ref={mainContainer}
       >
-        <div className="overflow-auto" id="messages-container" ref={messagesContainer}>
+        <div
+          className="overflow-auto"
+          id="messages-container"
+          ref={messagesContainer}
+        >
           <Messages messages={messages} />
 
           {/* ai message that is being streamed in shows here */}
-          {latestMessage.length > 0 && <LatestMessage content={latestMessage}/>}
+          {latestMessage.length > 0 && (
+            <LatestMessage content={latestMessage} />
+          )}
           <div ref={ref} className="h-[1px]"></div>
         </div>
 
@@ -253,6 +260,13 @@ export default function Something(props: props) {
                 onClick={forwardFileEvent}
               />
             </div>
+            {/* <div className="absolute top-2 right-0 pr-3 flex items-center pointer-events-none">
+              <FontAwesomeIcon
+                icon={faBan}
+                className="text-lg text-gray-400 z-10 pointer-events-auto cursor-pointer hover:text-gray-600"
+                
+              />
+            </div> */}
             {previewImage && (
               <img
                 src={previewImage}

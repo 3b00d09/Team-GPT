@@ -134,7 +134,7 @@ async function updateDatabase(userMessage:string, imageUrl:string, assistantMess
     } 
     
     catch (e) {
-        console.log("error saving to database")
+        console.log(e)
     }
 }
 
