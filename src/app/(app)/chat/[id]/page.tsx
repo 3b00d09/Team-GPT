@@ -1,5 +1,6 @@
 // Opt out of caching for all data requests in the route segment
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 import Something from "@/lib/components/Something";
 import { dbClient } from "@/lib/db/db";
