@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react";
-import { sendMessage } from "../actions";
+import { sendClaudeMessage, sendMessage } from "../actions";
 import { useRef } from "react";
 import Messages from "@/lib/components/Messages";
 import { faArrowUpFromBracket, faWheelchairMove, faBan } from "@fortawesome/free-solid-svg-icons";
@@ -85,7 +85,7 @@ export default function Something(props: props) {
         base64Image = await convertToBase64(file);
       }
 
-      const { newMessage } = await sendMessage(
+      const { newMessage } = await sendClaudeMessage(
         newMessages,
         parseInt(props.params.id),
         base64Image && file ? { image: base64Image, name: file.name } : null,
