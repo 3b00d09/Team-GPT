@@ -13,6 +13,7 @@ import { validateRequest } from "./auth/auth";
 import { redirect } from "next/navigation";
 
 import { anthropic } from "@ai-sdk/anthropic";
+import { imageBase64ToFile } from "./utils";
 
 export async function sendMessage(
   messages: messageRow[],
@@ -111,15 +112,8 @@ export async function sendClaudeMessage(messages: messageRow[], convoId: number,
 
     if (image && image.image) {
         try {
-        const [header, base64Data] = image.image.split(",");
-        const mime = header.match(/:(.*?);/)?.[1];
-
-        if (!mime) {
-            throw new Error("Invalid MIME type");
-        }
-
-        const binaryData = Buffer.from(base64Data, "base64");
-        const imageFile = new File([binaryData], image.name, { type: mime });
+        
+        const imageFile = imageBase64ToFile(image)
 
         const res = await utapi.uploadFiles(imageFile);
         if (res.data && res.data.url) imageUrl = new URL(res.data.url);

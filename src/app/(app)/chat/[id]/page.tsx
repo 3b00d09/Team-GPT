@@ -39,6 +39,7 @@ export default async function Page(props: props) {
     return message;
   });
 
+  // this means we have 1 message only , so we create a response stream and pass it as a prop to start streaming a response as soon as page loads
   let stream: StreamableValue<any, any> | null = null;
   if (messageRows.length === 1) {
     const { newMessage } = await sendMessage(

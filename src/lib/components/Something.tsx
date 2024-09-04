@@ -14,6 +14,8 @@ import { useRouter } from "next/navigation";
 import { messageRow } from "../db/schemaTypes";
 import { LatestMessage } from "@/lib/components/Messages";
 
+import { convertToBase64 } from "../utils";
+
 type props = {
     params:{
         id: string
@@ -124,14 +126,7 @@ export default function Something(props: props) {
       }
     };
 
-    function convertToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
-    });
-    }
+
 
     const handleTextareaInput = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         e.currentTarget.style.height = "auto";
