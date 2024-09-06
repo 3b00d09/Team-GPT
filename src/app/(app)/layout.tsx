@@ -9,6 +9,7 @@ import { lucia, validateRequest } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { AuthForm, type ActionResult } from "@/lib/components/AuthForm";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -43,6 +44,7 @@ export default async function RootLayout({
             <QueryClientWrapper>{children}</QueryClientWrapper>
           </div>
         </main>
+        <Toaster/>
       </body>
     </html>
   );

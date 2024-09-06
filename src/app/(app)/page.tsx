@@ -1,17 +1,20 @@
 "use client"
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input"
 import React, { useRef } from "react";
+
+import { InsertErrorResponse, InsertSuccessResponse } from "../api/create-convo/route";
 
 export default function Home() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const {toast} = useToast()
   
   async function createConversation(formData: FormData) {
     if(inputRef.current) inputRef.current.disabled = true;
     const message = formData.get("message");
       if (message) {
-
           const req = await fetch("/api/create-convo", {
               method: "POST",
               body: JSON.stringify({ content: message }),
@@ -19,13 +22,19 @@ export default function Home() {
                   "Content-Type": "application/json",
               },
           });
-          const res = await req.json();
+          const res: InsertErrorResponse | InsertSuccessResponse = await req.json();
 
           if(res.success){
-            router.push(`/chat/${res.id}`)
+            router.push(`/chat/${res.convoId}`)
           }
           else{
             if(inputRef.current) inputRef.current.disabled = false;
+            toast({
+              title: "Error",
+              description: res.message + "\n" + res.err,
+              duration:100,
+              variant:"destructive"
+            })
           }
       }
   }
@@ -47,4 +56,3 @@ export default function Home() {
     </div>
   );
 }
-  
