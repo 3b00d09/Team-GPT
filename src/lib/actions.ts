@@ -124,7 +124,7 @@ export async function sendClaudeMessage(messages: messageRow[], convoId: number,
 
     if (imageUrl) {
         // anthropic doesnt support images so we have to fetch a description from GPT
-        const imageDesc = await fetchImageDescription(imageUrl.href)
+        const imageDesc = await fetchImageDescription(imageUrl.href, messages[0].content)
 
         // merge the last message with the image description in 1 message object otherwise we get two "user" messages in a row which throws an err
         coreMessages[coreMessages.length - 1].content = [
@@ -219,7 +219,7 @@ async function updateDatabase(
 }
 
 // fetch image description from gpt-4o-mini
-async function fetchImageDescription(imageUrl:string) : Promise<string>{
+async function fetchImageDescription(imageUrl:string, userMessage: string) : Promise<string>{
 
     const result = await generateText({
       model: openai("gpt-4o-mini"),
@@ -229,13 +229,18 @@ async function fetchImageDescription(imageUrl:string) : Promise<string>{
           content: [
             {
               type: "text",
-              text: "describe the image in detail",
+              text: userMessage,
             },
             {
               type: "image",
               image: imageUrl,
             },
           ],
+        },
+        {
+          role: "system",
+          content:
+            "the user uploaded a picture with a prompt and you are the middle man between the user and another AI engine. describe the image to the AI engine so it can help the user, use the prompt as context to what the user wants.",
         },
       ],
     });
