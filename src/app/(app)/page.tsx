@@ -32,7 +32,7 @@ export default function Home() {
             toast({
               title: "Error",
               description: res.message + "\n" + res.err,
-              duration:100,
+              duration:1000,
               variant:"destructive"
             })
           }
