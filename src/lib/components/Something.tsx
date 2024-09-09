@@ -87,7 +87,7 @@ export default function Something(props: props) {
         base64Image = await convertToBase64(file);
       }
 
-      const { newMessage } = await sendClaudeMessage(
+      const { newMessage } = await sendMessage(
         newMessages,
         parseInt(props.params.id),
         base64Image && file ? { image: base64Image, name: file.name } : null,
