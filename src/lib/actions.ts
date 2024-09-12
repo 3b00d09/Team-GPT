@@ -63,7 +63,7 @@ export async function sendMessage(
   const stream = createStreamableValue();
   (async () => {
     const { textStream } = await streamText({
-      model: openai("gpt-4o-2024-05-13"),
+      model: openai("gpt-4o-2024-08-06"),
       messages: [
         ...coreMessages,
         {
