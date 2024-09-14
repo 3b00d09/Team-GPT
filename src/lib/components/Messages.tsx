@@ -11,9 +11,10 @@ import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
 import { CoreMessage } from "ai";
 import { messagesTable } from "../db/schema";
+import { MessagesData } from "../types";
 
 type props = {
-  messages: typeof messagesTable.$inferSelect[];
+  messages: MessagesData[];
 };
 
 type latestMessage = {
@@ -21,7 +22,7 @@ type latestMessage = {
 }
 
 type MessageProps = {
-    message: typeof messagesTable.$inferSelect;
+    message: MessagesData;
     latest?: boolean
 }
 
@@ -52,25 +53,29 @@ export const Message = ({message, latest}: MessageProps) =>{
 
     if(!hasMounted) return null
     return (
-      <div
-        className={
-          "w-3/4" 
-        }
-      >
-        <div className={"px-4 py-2 text-base" }>
-          {message.user ? (
-            <FontAwesomeIcon icon={faUser} />
-          ) : (
-            <FontAwesomeIcon icon={faWheelchairMove} />
+      <div className={"w-3/4"}>
+        <div className={"px-4 py-2"}>
+          <div className="flex gap-2 items-baseline flex-wrap">
+            {message.user ? (
+              <FontAwesomeIcon icon={faUser} />
+            ) : (
+              <FontAwesomeIcon icon={faWheelchairMove} />
+            )}
+            <Markdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex, rehypeHighlight]}
+            >
+              {message.content ? (message.content as string) : ""}
+            </Markdown>
+          </div>
+          {message.imageUrl && (
+            <img
+              src={message.imageUrl}
+              className="object-contain w-full"
+              alt=""
+            />
           )}
-          <Markdown
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeKatex, rehypeHighlight]}
-          >
-            {message.content ? (message.content as string) : ""}
-          </Markdown>
         </div>
-        {message.imageUrl && <img src={message.imageUrl} className="w-48 object-contain" alt="" />}
       </div>
     );
 }

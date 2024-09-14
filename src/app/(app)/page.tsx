@@ -5,54 +5,31 @@ import { Input } from "@/components/ui/input"
 import React, { useRef } from "react";
 
 import { InsertErrorResponse, InsertSuccessResponse } from "../api/create-convo/route";
+import ChatWrapper from "@/lib/components/ChatWrapper";
+import Messages from "@/lib/components/Messages";
+import { MessagesData } from "@/lib/types";
+import ChatForm from "@/lib/components/ChatForm";
+import { initiateConversation } from "@/lib/actions";
+import { convertToBase64 } from "@/lib/utils";
 
 export default function Home() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const {toast} = useToast()
-  
-  async function createConversation(formData: FormData) {
-    if(inputRef.current) inputRef.current.disabled = true;
-    const message = formData.get("message");
-      if (message) {
-          const req = await fetch("/api/create-convo", {
-              method: "POST",
-              body: JSON.stringify({ content: message }),
-              headers: {
-                  "Content-Type": "application/json",
-              },
-          });
-          const res: InsertErrorResponse | InsertSuccessResponse = await req.json();
 
-          if(res.success){
-            router.push(`/chat/${res.convoId}`)
-          }
-          else{
-            if(inputRef.current) inputRef.current.disabled = false;
-            toast({
-              title: "Error",
-              description: res.message + "\n" + res.err,
-              duration:1000,
-              variant:"destructive"
-            })
-          }
-      }
+  async function handleChatSubmit (file: File | null, userMessage: string){
+    let base64Image = "";
+    if (file) base64Image = await convertToBase64(file);
+    const conversationInit = await initiateConversation(userMessage, base64Image && file ? { image: base64Image, name: file.name } : null)
+    if(conversationInit.convoId){
+      router.push(`/chat/${conversationInit.convoId}`)
+    }
   }
+
+
   return (
-    <div className="flex-1 flex flex-col justify-between">
-      <div className="flex-1 grid place-items-center">
-        A bunch of stuff here?
-      </div>
-      <form className="self-center w-1/2" action={createConversation}>
-        <Input
-          ref={inputRef}
-          name="message"
-          className="w-full p-4 rounded-lg bg-transparent border border-slate-600"
-          placeholder="Message ChatGPT..."
-          autoComplete="off"
-          type="text"
-        ></Input>
-      </form>
+    <div className="grid flex-1 grid-rows-[90% 10%] overflow-y-none">
+      <ChatForm formSubmit={handleChatSubmit} />
     </div>
   );
 }

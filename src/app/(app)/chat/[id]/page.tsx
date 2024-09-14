@@ -2,14 +2,13 @@
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-import Something from "@/lib/components/Something";
 import { dbClient } from "@/lib/db/db";
 import { messagesTable } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { CoreMessage } from "ai";
 import { sendMessage } from "@/lib/actions";
 import { StreamableValue } from "ai/rsc";
-import { messageRow } from "@/lib/db/schemaTypes";
+import { MessagesData } from "@/lib/types";
+import ChatWrapper from "@/lib/components/ChatWrapper";
 
 type props = {
   params: {
@@ -20,11 +19,12 @@ type props = {
 
 export default async function Page(props: props) {
   const messageRows = await dbClient
-    .select()
+    .select({content: messagesTable.content, user: messagesTable.user, assistant: messagesTable.assistant, imageUrl: messagesTable.imageUrl})
     .from(messagesTable)
-    .where(eq(messagesTable.conversationId, parseInt(props.params.id)));
+    .where(eq(messagesTable.conversationId, parseInt(props.params.id)))
+    .orderBy(messagesTable.createdAt);
 
-  const messages: messageRow[] = messageRows.map((message) => {
+  const messages: MessagesData[] = messageRows.map((message) => {
     //https://github.com/remarkjs/react-markdown/issues/785#issuecomment-1966495891
     message.content = message.content.replace(
       /\\\[(.*?)\\\]/g,
@@ -46,10 +46,11 @@ export default async function Page(props: props) {
       messageRows,
       parseInt(props.params.id),
       null,
+      messageRows[0].imageUrl ?? undefined,
       true
     );
     stream = newMessage;
   }
 
-  return <Something {...props} messages={messages} stream={stream} />;
+  return <ChatWrapper {...props} messages={messages} stream={stream} />;
 }
