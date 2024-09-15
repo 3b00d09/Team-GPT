@@ -55,7 +55,7 @@ export const Message = ({message, latest}: MessageProps) =>{
     return (
       <div className={"w-3/4"}>
         <div className={"px-4 py-2"}>
-          <div className="flex gap-2 items-baseline flex-wrap">
+          <div className="flex flex-col gap-2 items-baseline">
             {message.user ? (
               <FontAwesomeIcon icon={faUser} />
             ) : (
@@ -64,6 +64,7 @@ export const Message = ({message, latest}: MessageProps) =>{
             <Markdown
               remarkPlugins={[remarkMath]}
               rehypePlugins={[rehypeKatex, rehypeHighlight]}
+              className={"w-full"}
             >
               {message.content ? (message.content as string) : ""}
             </Markdown>
