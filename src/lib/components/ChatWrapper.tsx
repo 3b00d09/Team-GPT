@@ -64,6 +64,7 @@ export default function ChatWrapper(props: props) {
         newMessages,
         parseInt(props.params.id),
         base64Image && file ? { image: base64Image, name: file.name } : null,
+        undefined,
         false
       );
 
