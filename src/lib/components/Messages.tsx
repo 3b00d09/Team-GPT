@@ -72,7 +72,7 @@ export const Message = ({message, latest}: MessageProps) =>{
           {message.imageUrl && (
             <img
               src={message.imageUrl}
-              className="object-contain w-full"
+              className="object-contain w-1/2"
               alt=""
             />
           )}

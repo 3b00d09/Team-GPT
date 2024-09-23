@@ -39,7 +39,7 @@ export default function ChatForm({ formSubmit }: props) {
     }
 
     const checkTextareaSubmit = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if(e.key === "Enter" && !e.shiftKey && e.currentTarget.value.trim().length > 0){
+        if(e.key === "Enter" && !e.shiftKey && (e.currentTarget.value.trim().length > 0 || file)){
             // simulate a submit event on the form
             chatForm.current?.dispatchEvent(new Event("submit", {bubbles: true}))
         }
@@ -47,16 +47,18 @@ export default function ChatForm({ formSubmit }: props) {
 
     const handleFormSubmit = async(e:React.FormEvent<HTMLFormElement>) =>{
       e.preventDefault()
-      if(!inputRef.current?.value) return
-      inputRef.current.disabled = true;
-      await formSubmit!(file, inputRef.current.value)
+      if (inputRef.current) {
+        inputRef.current.disabled = true;
 
-      if (inputRef) {
-        inputRef.current.disabled = false;
-        inputRef.current.value = "";
-        inputRef.current.style.height = "auto";
-        setFile(null);
-        setPreviewImage("");
+        await formSubmit!(file, inputRef.current.value);
+
+        if (inputRef) {
+          inputRef.current.disabled = false;
+          inputRef.current.value = "";
+          inputRef.current.style.height = "auto";
+          setFile(null);
+          setPreviewImage("");
+        }
       }
     }
     
