@@ -1,8 +1,12 @@
+// Opt out of caching for all data requests in the route segment
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "../../app/globals.css";
 import Conversations from "@/lib/components/conversations";
-import "@fortawesome/fontawesome-svg-core/styles.css"
+import "@fortawesome/fontawesome-svg-core/styles.css";
 import { QueryClientWrapper } from "@/lib/components/QueryClientWrapper";
 
 import { lucia, validateRequest } from "@/lib/auth/auth";
@@ -24,11 +28,11 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  	const { user } = await validateRequest();
-    if (!user) {
-      return redirect("/login");
-    }
-    
+  const { user } = await validateRequest();
+  if (!user) {
+    return redirect("/login");
+  }
+
   return (
     <html lang="en">
       <body className={inter.className}>
@@ -44,7 +48,7 @@ export default async function RootLayout({
             <QueryClientWrapper>{children}</QueryClientWrapper>
           </div>
         </main>
-        <Toaster/>
+        <Toaster />
       </body>
     </html>
   );
