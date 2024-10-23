@@ -18,9 +18,7 @@ export default function Home() {
   const {toast} = useToast()
 
   async function handleChatSubmit (file: File | null, userMessage: string){
-    let base64Image = "";
-    if (file) base64Image = await convertToBase64(file);
-    const conversationInit = await initiateConversation(userMessage, base64Image && file ? { image: base64Image, name: file.name } : null)
+    const conversationInit = await initiateConversation(userMessage, file ? await convertToBase64(file) : null)
     if(conversationInit.convoId){
       router.push(`/chat/${conversationInit.convoId}`)
     }

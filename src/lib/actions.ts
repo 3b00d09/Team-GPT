@@ -3,10 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { dbClient } from "./db/db";
 import { conversationsTable, messagesTable } from "./db/schema";
-import { utapi } from "./uploadthing";
 
 import { createStreamableValue } from "ai/rsc";
-import { CoreMessage, CoreUserMessage, generateText, ImagePart, streamText, UserContent } from "ai";
+import { CoreMessage, CoreUserMessage, generateText, ImagePart, streamText, TextPart, UserContent } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { messageRow } from "./db/schemaTypes";
 import { validateRequest } from "./auth/auth";
@@ -15,13 +14,12 @@ import { redirect } from "next/navigation";
 import { anthropic } from "@ai-sdk/anthropic";
 import { imageBase64ToFile } from "./utils";
 import { MessagesData } from "./types";
+import { prompt } from "./utils";
 
 export async function sendMessage(
   messages: MessagesData[],
+  newMsg: MessagesData,
   convoId: number,
-  image?: { image: string; name: string } | null,
-  // for fresh conversations, we need to handle the case when an image url exists in the first message
-  firstImgUrl?: string,
   newMessage: boolean = false
 ) {
   const { user } = await validateRequest();
@@ -29,143 +27,199 @@ export async function sendMessage(
     return redirect("/login");
   }
 
-  let imageUrl: URL | null = null;
+  let binaryData: Buffer | null = null;
+  
+
   const coreMessages: CoreMessage[] = messages.map((message) => {
-    return {
-      content: message.content,
-      role: message.user ? "user" : "assistant",
-    };
-  });
 
-  if (image && image.image) {
-    imageUrl = await uploadImageToUploadThing(image);
-  }
+    if(message.assistant){
+      return{
+        content: message.content, 
+        role: "assistant"
+      }
+    }
+    
+    // messages with just an image can have empty text, and vise versa obv
+    let textPart:TextPart;
+    let imagePart: ImagePart;
 
-  // this array of content will hold the image for us in case we have one
-  const customContent: ImagePart[] = [];
+    if(message.content && message.imageUrl){
+      textPart = {
+        type:"text",
+        text:message.content,
+      }
+      imagePart = {
+        type:"image",
+        image:message.imageUrl
+      }
 
-  if (imageUrl || firstImgUrl) {
-    customContent.push({ type: "image", image: imageUrl || new URL(firstImgUrl!) });
-  }
-  const stream = createStreamableValue();
-  (async () => {
-    const { textStream } = await streamText({
-      model: openai("gpt-4o-2024-08-06"),
-      messages: [
-        ...coreMessages,
-        {
-          role: "user",
-          content: [...customContent],
-        },
-      ],
-      system: "You are a helpful assistant.",
-    });
+      return {
+        content:[textPart, imagePart],
+        role:"user"
+      }
+    }
+    else if(message.imageUrl){
+      imagePart = {
+        type: "image",
+        image: message.imageUrl,
+      };
 
-    let AIMessage: string = "";
-    for await (const text of textStream) {
-      stream.update(text);
-      AIMessage = AIMessage + text;
+      return {
+        content: [imagePart],
+        role: "user",
+      };
     }
 
-    stream.done();
-    await updateDatabase(
-      messages[messages.length - 1].content as string,
-      imageUrl ? imageUrl.href : "",
-      AIMessage,
-      convoId,
-      newMessage
-    );
-    revalidatePath(`/chat/${convoId}`);
+    return{
+      role:"user",
+      content:message.content,
+    }
+
+  });
+ 
+  if (newMsg.imageUrl) {
+      const [header, base64Data] = newMsg.imageUrl.split(",");
+      const mime = header.match(/:(.*?);/)?.[1];
+
+      if (!mime) {
+        throw new Error("Invalid MIME type");
+      }
+      binaryData = Buffer.from(base64Data, "base64");
+  }
+
+  const stream = createStreamableValue();
+  let AIMessage = "";
+
+  (async () => {
+    try {
+      const { textStream } = await streamText({
+        model: openai("gpt-4o-2024-08-06"),
+        messages: coreMessages,
+        system: prompt,
+        async onFinish({text, finishReason, usage}){
+          await updateDatabase(
+            messages[messages.length - 1].content as string,
+            binaryData,
+            text,
+            convoId,
+            newMessage
+          );
+        }
+      });
+
+      try {
+        for await (const text of textStream) {
+          stream.update(text);
+          AIMessage += text;
+        }
+      } 
+      
+      catch (streamError) {
+        console.error("Streaming error:", streamError);
+        stream.error(streamError);
+        throw streamError; // throw again because of nested try catch
+      } 
+      
+      finally {
+        stream.done();
+      }
+      revalidatePath(`/chat/${convoId}`);
+    } 
+    
+    catch (error) {
+      console.error("Operation failed:", error);
+    }
   })();
+
 
   return {
     newMessage: stream.value,
   };
 }
 
-export async function sendClaudeMessage(messages: messageRow[], convoId: number, image?: { image: string; name: string } | null, newMessage: boolean = false) {
+// export async function sendClaudeMessage(messages: messageRow[], convoId: number, image?: { image: string; name: string } | null, newMessage: boolean = false) {
   
-    const { user } = await validateRequest();
-    if (!user) return redirect("/login");
+//     const { user } = await validateRequest();
+//     if (!user) return redirect("/login");
 
-    let imageUrl: URL | null = null;
+//     let imageUrl: URL | null = null;
 
-    const coreMessages: CoreMessage[] = messages.map((message) => {
-        return {
-            content: message.content,
-            role: message.user ? "user" : "assistant",
-        };
-    });
+//     const coreMessages: CoreMessage[] = messages.map((message) => {
+//         return {
+//             content: message.content,
+//             role: message.user ? "user" : "assistant",
+//         };
+//     });
 
-    if (image && image.image) {
-        try {
+//     if (image && image.image) {
+//         try {
         
-        const imageFile = imageBase64ToFile(image)
+//         const imageFile = imageBase64ToFile(image)
 
-        const res = await utapi.uploadFiles(imageFile);
-        if (res.data && res.data.url) imageUrl = new URL(res.data.url);
-        } catch (e) {
-            console.error("Failed to upload image:", e);
-        }
-    }
+//         const res = await utapi.uploadFiles(imageFile);
+//         if (res.data && res.data.url) imageUrl = new URL(res.data.url);
+//         } catch (e) {
+//             console.error("Failed to upload image:", e);
+//         }
+//     }
 
-    if (imageUrl) {
-        // anthropic doesnt support images so we have to fetch a description from GPT
-        const imageDesc = await fetchImageDescription(imageUrl.href, messages[0].content)
+//     if (imageUrl) {
+//         // anthropic doesnt support images so we have to fetch a description from GPT
+//         const imageDesc = await fetchImageDescription(imageUrl.href, messages[0].content)
 
-        // merge the last message with the image description in 1 message object otherwise we get two "user" messages in a row which throws an err
-        coreMessages[coreMessages.length - 1].content = [
-          {
-            type: "text",
-            text: messages[messages.length - 1].content,
-          },
-          {
-            type: "text",
-            text:`image description: ${imageDesc}`
-          }
-        ];
-    }
+//         // merge the last message with the image description in 1 message object otherwise we get two "user" messages in a row which throws an err
+//         coreMessages[coreMessages.length - 1].content = [
+//           {
+//             type: "text",
+//             text: messages[messages.length - 1].content,
+//           },
+//           {
+//             type: "text",
+//             text:`image description: ${imageDesc}`
+//           }
+//         ];
+//     }
 
-    const stream = createStreamableValue();
-    try{
-        (async () => {
-            const { textStream } = await streamText({
-            model: anthropic("claude-3-opus-20240229"),
-            messages: [
-                ...coreMessages,
-            ],
-            system: "You are a helpful assistant.",
-            });
+//     const stream = createStreamableValue();
+//     try{
+//         (async () => {
+//             const { textStream } = await streamText({
+//             model: anthropic("claude-3-opus-20240229"),
+//             messages: [
+//                 ...coreMessages,
+//             ],
+//             system: "You are a helpful assistant.",
+//             });
 
-            let AIMessage: string = "";
-            for await (const text of textStream) {
-            stream.update(text);
-            AIMessage = AIMessage + text;
-            }
+//             let AIMessage: string = "";
+//             for await (const text of textStream) {
+//             stream.update(text);
+//             AIMessage = AIMessage + text;
+//             }
 
-            stream.done();
-            await updateDatabase(
-            messages[messages.length - 1].content as string,
-            imageUrl ? imageUrl.href : "",
-            AIMessage,
-            convoId,
-            newMessage
-            );
-            revalidatePath(`/chat/${convoId}`);
-        })();
-    }
-    catch(e){
-        stream.done()
-    }
+//             stream.done();
+//             await updateDatabase(
+//             messages[messages.length - 1].content as string,
+//             imageUrl ? imageUrl.href : "",
+//             AIMessage,
+//             convoId,
+//             newMessage
+//             );
+//             revalidatePath(`/chat/${convoId}`);
+//         })();
+//     }
+//     catch(e){
+//         stream.done()
+//     }
     
-    return {
-        newMessage: stream.value,
-    };
-}
+//     return {
+//         newMessage: stream.value,
+//     };
+// }
 
 async function updateDatabase(
   userMessage: string,
-  imageUrl: string,
+  imageBinary: Buffer | null,
   assistantMessage: string,
   convoId: number,
   newMessage: boolean = false
@@ -177,7 +231,7 @@ async function updateDatabase(
           //@ts-ignore
           conversationId: convoId,
           content: assistantMessage,
-          imageUrl: imageUrl,
+          image:imageBinary,
           user: 0,
           assistant: 1,
         });
@@ -186,7 +240,7 @@ async function updateDatabase(
           //@ts-ignore
           conversationId: convoId,
           content: userMessage,
-          imageUrl: imageUrl,
+          image:imageBinary,
           user: 1,
           assistant: 0,
         });
@@ -206,7 +260,7 @@ async function updateDatabase(
 }
 
 
-export async function initiateConversation(message: string, image: { image: string; name: string } | null) {
+export async function initiateConversation(message: string, image: string | null) {
   if (!message) {
     return {
       success: false,
@@ -216,9 +270,17 @@ export async function initiateConversation(message: string, image: { image: stri
   const { user } = await validateRequest();
   if (!user) return redirect("/login");
   const topic = await getConversationSummary(message);
-  let imageUrl: URL | null = null;
-  if(image && image.image){
-    imageUrl = await uploadImageToUploadThing(image);
+
+  let imageBinary: Buffer | null;
+
+  if(image){
+      const [header, base64Data] = image.split(",");
+      const mime = header.match(/:(.*?);/)?.[1];
+
+      if (!mime) {
+        throw new Error("Invalid MIME type");
+      }
+      imageBinary = Buffer.from(base64Data, "base64");
   }
       try {
         const txResult = await dbClient.transaction(async (tx) => {
@@ -236,9 +298,8 @@ export async function initiateConversation(message: string, image: { image: stri
               content: message,
               user: true,
               assistant: false,
-              imageUrl: imageUrl ? imageUrl.href : "",
+              image: imageBinary ? imageBinary : null
             })
-
 
           revalidatePath("/", "layout");
 
@@ -286,27 +347,6 @@ async function getConversationSummary(message:string){
     }
 }
 
-async function uploadImageToUploadThing(image: { image: string; name: string }) {
-    try {
-      const [header, base64Data] = image.image.split(",");
-      const mime = header.match(/:(.*?);/)?.[1];
-
-      if (!mime) {
-        throw new Error("Invalid MIME type");
-      }
-      const binaryData = Buffer.from(base64Data, "base64");
-      const imageFile = new File([binaryData], image.name, { type: mime });
-
-      const res = await utapi.uploadFiles(imageFile);
-      if (res.data && res.data.url){
-        return new URL(res.data.url);
-      } 
-      return null
-    } 
-    catch (e) {
-      return null
-  }
-}
 
 // fetch image description from gpt-4o-mini
 async function fetchImageDescription(imageUrl:string, userMessage: string) : Promise<string>{

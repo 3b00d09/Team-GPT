@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, blob } from "drizzle-orm/sqlite-core";
 
 export const usersTable = sqliteTable("user", {
   id: text("id").primaryKey().notNull(),
@@ -32,6 +32,7 @@ export const messagesTable = sqliteTable("messages", {
     .references(() => conversationsTable.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
   imageUrl: text("image_url"),
+  image: blob("image").$type<Buffer | null>(),
   createdAt: integer("created_at", { mode: "timestamp" }).$default(() => {
     return new Date();
   }),

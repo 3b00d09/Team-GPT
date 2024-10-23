@@ -2,7 +2,7 @@
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react";
-import { sendClaudeMessage, sendMessage } from "../actions";
+import {  sendMessage } from "../actions";
 import { useRef } from "react";
 import Messages from "@/lib/components/Messages";
 import { faWheelchairMove } from "@fortawesome/free-solid-svg-icons";
@@ -49,22 +49,16 @@ export default function ChatWrapper(props: props) {
         content: userLatestMessage,
         user: true,
         assistant: false,
-        imageUrl: file? URL.createObjectURL(file) : null,
+        imageUrl: file? await convertToBase64(file) : null,
       };
       const newMessages: MessagesData[] = [...messages, newMsg];
       setMessages(newMessages);
 
-      // CANNOT PASS FILES TO SERVER ACTIONS :))))
-      let base64Image = "";
-      if (file) {
-        base64Image = await convertToBase64(file);
-      }
 
       const { newMessage } = await sendMessage(
         newMessages,
+        newMsg,
         parseInt(props.params.id),
-        base64Image && file ? { image: base64Image, name: file.name } : null,
-        undefined,
         false
       );
 
