@@ -26,23 +26,6 @@ export default async function Page(props: props) {
 
 
   const messages: MessagesData[] = messageRows.map((message) => {
-    //https://github.com/remarkjs/react-markdown/issues/785#issuecomment-1966495891
-    message.content = message.content.replace(
-      /\\\[(.*?)\\\]/g,
-      (_, equation) => `$$${equation}$$`
-    );
-
-    message.content = message.content.replace(
-      /\\\((.*?)\\\)/g,
-      (_, equation) => `$${equation}$`
-    );
-
-    //https://community.openai.com/t/openai-api-does-not-write-the-equation-in-latex-format-in-mathjax-format/805445/2
-    message.content = message.content
-      .replaceAll("\\(", "$")
-      .replaceAll("\\)", "$")
-      .replaceAll("\\[", "$$")
-      .replaceAll("\\]", "$$");
 
     let imgurl: string = "";
     if (message.imageUrl) {

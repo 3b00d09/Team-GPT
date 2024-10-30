@@ -48,6 +48,13 @@ export const Message = ({message, latest}: MessageProps) =>{
     const [hasMounted, setHasMounted] = useState(false)
 
     useEffect(()=>{
+      message.content = message.content
+          .replace(/\\\[(.*?)\\\]/g, (_, equation) => `$$${equation}$$`)
+          .replace(/\\\((.*?)\\\)/g, (_, equation) => `$${equation}$`)
+          .replaceAll("\\(", "$")
+          .replaceAll("\\)", "$")
+          .replaceAll("\\[", "$$")
+          .replaceAll("\\]", "$$");
         setHasMounted(true)
     },[])
 
