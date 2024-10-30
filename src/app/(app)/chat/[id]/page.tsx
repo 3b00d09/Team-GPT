@@ -27,19 +27,19 @@ export default async function Page(props: props) {
 
   const messages: MessagesData[] = messageRows.map((message) => {
 
-    let imgurl: string = "";
-    if (message.imageUrl) {
-      // this shouldnt be png for all images, need fix
-      imgurl =
-        `data:image/png;base64,` +
-        (message.imageUrl as Buffer).toString("base64");
-    }
+    // let imgurl: string = "";
+    // if (message.imageUrl) {
+    //   // this shouldnt be png for all images, need fix
+    //   imgurl =
+    //     `data:image/png;base64,` +
+    //     (message.imageUrl as Buffer).toString("base64");
+    // }
 
     const msg: MessagesData = {
       content: message.content,
       assistant: message.assistant,
       user: message.user,
-      imageUrl: imgurl,
+      imageUrl: null,
     };
     return msg;
   });
