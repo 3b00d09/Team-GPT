@@ -7,7 +7,6 @@ import { Inter } from "next/font/google";
 import "../../app/globals.css";
 import Conversations from "@/lib/components/conversations";
 import "@fortawesome/fontawesome-svg-core/styles.css";
-import { QueryClientWrapper } from "@/lib/components/QueryClientWrapper";
 
 import { lucia, validateRequest } from "@/lib/auth/auth";
 import { redirect } from "next/navigation";
@@ -45,7 +44,7 @@ export default async function RootLayout({
                 <button>Sign out</button>
               </AuthForm>
             </div>
-            <QueryClientWrapper>{children}</QueryClientWrapper>
+            {children}
           </div>
         </main>
         <Toaster />
