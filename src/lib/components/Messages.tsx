@@ -82,6 +82,13 @@ export const Message = ({message, latest}: MessageProps) =>{
 }
 
 export const LatestMessage = ({ content }: latestMessage) => {
+  content = content
+    .replace(/\\\[(.*?)\\\]/g, (_, equation) => `$$${equation}$$`)
+    .replace(/\\\((.*?)\\\)/g, (_, equation) => `$${equation}$`)
+    .replaceAll("\\(", "$")
+    .replaceAll("\\)", "$")
+    .replaceAll("\\[", "$$")
+    .replaceAll("\\]", "$$");
   return (
     <div
       className={

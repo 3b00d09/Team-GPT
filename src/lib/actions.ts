@@ -109,7 +109,6 @@ export async function sendMessage(
 
       try {
         for await (const text of textStream) {
-          stream.update(text);
           AIMessage += text;
         }
       } 
@@ -231,7 +230,6 @@ async function updateDatabase(
           //@ts-ignore
           conversationId: convoId,
           content: assistantMessage,
-          image:imageBinary,
           user: 0,
           assistant: 1,
         });

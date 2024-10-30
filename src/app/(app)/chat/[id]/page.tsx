@@ -36,19 +36,28 @@ export default async function Page(props: props) {
       /\\\((.*?)\\\)/g,
       (_, equation) => `$${equation}$`
     );
-    
-    let imgurl:string = ""
-    if(message.imageUrl){
+
+    //https://community.openai.com/t/openai-api-does-not-write-the-equation-in-latex-format-in-mathjax-format/805445/2
+    message.content = message.content
+      .replaceAll("\\(", "$")
+      .replaceAll("\\)", "$")
+      .replaceAll("\\[", "$$")
+      .replaceAll("\\]", "$$");
+
+    let imgurl: string = "";
+    if (message.imageUrl) {
       // this shouldnt be png for all images, need fix
-      imgurl = `data:image/png;base64,` + (message.imageUrl as Buffer).toString("base64");
+      imgurl =
+        `data:image/png;base64,` +
+        (message.imageUrl as Buffer).toString("base64");
     }
 
-    const msg:MessagesData = {
+    const msg: MessagesData = {
       content: message.content,
       assistant: message.assistant,
       user: message.user,
-      imageUrl: imgurl
-    }
+      imageUrl: imgurl,
+    };
     return msg;
   });
 
