@@ -109,6 +109,7 @@ export async function sendMessage(
 
       try {
         for await (const text of textStream) {
+          stream.update(text)
           AIMessage += text;
         }
       } 

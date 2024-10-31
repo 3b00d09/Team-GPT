@@ -39,16 +39,3 @@ export const messagesTable = sqliteTable("messages", {
   user: integer("user", { mode: "boolean" }).default(false).notNull(),
   assistant: integer("assistant", { mode: "boolean" }).default(false).notNull(),
 });
-
-export const messagesTable2 = sqliteTable("messages_without_images", {
-  id: integer("id").primaryKey(),
-  conversationId: integer("conversation_id")
-    .notNull()
-    .references(() => conversationsTable.id, { onDelete: "cascade" }),
-  content: text("content").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }).$default(() => {
-    return new Date();
-  }),
-  user: integer("user", { mode: "boolean" }).default(false).notNull(),
-  assistant: integer("assistant", { mode: "boolean" }).default(false).notNull(),
-});

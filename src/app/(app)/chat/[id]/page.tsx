@@ -2,7 +2,7 @@
 export const maxDuration = 60;
 
 import { dbClient } from "@/lib/db/db";
-import { messagesTable, messagesTable2 } from "@/lib/db/schema";
+import { messagesTable } from "@/lib/db/schema";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { sendMessage } from "@/lib/actions";
 import { StreamableValue } from "ai/rsc";
