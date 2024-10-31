@@ -63,5 +63,5 @@ export default async function Page(props: props) {
     );
     stream = newMessage;
   }
-  return <ChatWrapper {...props} messages={messages} stream={null} />;
+  return <ChatWrapper {...props} messages={messages} stream={stream} />;
 }
