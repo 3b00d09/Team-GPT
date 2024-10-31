@@ -22,7 +22,7 @@ export default async function Page(props: props) {
     .select({content: messagesTable2.content, user: messagesTable2.user, assistant: messagesTable2.assistant})
     .from(messagesTable2)
     .where(eq(messagesTable2.conversationId, parseInt(props.params.id)))
-    .orderBy(messagesTable2.createdAt);
+    .orderBy(messagesTable2.createdAt).limit(10);
 
     console.log("messages done")
 
