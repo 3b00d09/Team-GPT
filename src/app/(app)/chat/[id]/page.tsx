@@ -19,10 +19,10 @@ type props = {
 export default async function Page(props: props) {
   console.log("query messages")
   const messageRows = await dbClient
-    .select({content: messagesTable2.content, user: messagesTable2.user, assistant: messagesTable2.assistant})
-    .from(messagesTable2)
-    .where(eq(messagesTable2.conversationId, parseInt(props.params.id)))
-    .orderBy(messagesTable2.createdAt).limit(10);
+    .select({content: messagesTable.content, user: messagesTable.user, assistant: messagesTable.assistant})
+    .from(messagesTable)
+    .where(eq(messagesTable.conversationId, parseInt(props.params.id)))
+    .orderBy(messagesTable.createdAt);
 
     console.log("messages done")
 
