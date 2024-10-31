@@ -17,27 +17,21 @@ type props = {
 };
 
 export default async function Page(props: props) {
-  console.log("query messages")
   const messageRows = await dbClient
-    .select({content: messagesTable.content, user: messagesTable.user, assistant: messagesTable.assistant})
+    .select({content: messagesTable.content, user: messagesTable.user, assistant: messagesTable.assistant, imageUrl: messagesTable.image})
     .from(messagesTable)
     .where(eq(messagesTable.conversationId, parseInt(props.params.id)))
     .orderBy(messagesTable.createdAt);
 
-    console.log("messages done")
-
-
   const messages: MessagesData[] = messageRows.map((message) => {
 
-    console.log("mapping")
-
-    // let imgurl: string = "";
-    // if (message.imageUrl) {
-    //   // this shouldnt be png for all images, need fix
-    //   imgurl =
-    //     `data:image/png;base64,` +
-    //     (message.imageUrl as Buffer).toString("base64");
-    // }
+    let imgurl: string = "";
+    if (message.imageUrl) {
+      // this shouldnt be png for all images, need fix
+      imgurl =
+        `data:image/png;base64,` +
+        (message.imageUrl as Buffer).toString("base64");
+    }
 
     const msg: MessagesData = {
       content: message.content,
@@ -48,28 +42,26 @@ export default async function Page(props: props) {
     return msg;
   });
 
-  console.log("map done")
-
   // this means we have 1 message only , so we create a response stream and pass it as a prop to start streaming a response as soon as page loads
-  // let stream: StreamableValue<any, any> | null = null;
-  // if (messageRows.length === 1) {
-  //   const firstMessage:MessagesData = {
-  //     content: messageRows[0].content,
-  //     assistant: messageRows[0].assistant,
-  //     user: messageRows[0].user,
-  //     imageUrl: null
-  //   }
+  let stream: StreamableValue<any, any> | null = null;
+  if (messageRows.length === 1) {
+    const firstMessage:MessagesData = {
+      content: messageRows[0].content,
+      assistant: messageRows[0].assistant,
+      user: messageRows[0].user,
+      imageUrl: null
+    }
 
-  //   if(messageRows[0].imageUrl){
-  //     firstMessage.imageUrl = `data:image/png;base64,` + (messageRows[0].imageUrl as Buffer).toString("base64");
-  //   }
-  //   const { newMessage } = await sendMessage(
-  //     [firstMessage],
-  //     firstMessage,
-  //     parseInt(props.params.id),
-  //     true
-  //   );
-  //   stream = newMessage;
-  // }
+    if(messageRows[0].imageUrl){
+      firstMessage.imageUrl = `data:image/png;base64,` + (messageRows[0].imageUrl as Buffer).toString("base64");
+    }
+    const { newMessage } = await sendMessage(
+      [firstMessage],
+      firstMessage,
+      parseInt(props.params.id),
+      true
+    );
+    stream = newMessage;
+  }
   return <ChatWrapper {...props} messages={messages} stream={null} />;
 }
