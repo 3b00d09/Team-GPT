@@ -17,14 +17,19 @@ type props = {
 };
 
 export default async function Page(props: props) {
+  console.log("query messages")
   const messageRows = await dbClient
     .select({content: messagesTable2.content, user: messagesTable2.user, assistant: messagesTable2.assistant})
     .from(messagesTable2)
     .where(eq(messagesTable2.conversationId, parseInt(props.params.id)))
     .orderBy(messagesTable2.createdAt);
 
+    console.log("messages done")
+
 
   const messages: MessagesData[] = messageRows.map((message) => {
+
+    console.log("mapping")
 
     // let imgurl: string = "";
     // if (message.imageUrl) {
@@ -42,6 +47,8 @@ export default async function Page(props: props) {
     };
     return msg;
   });
+
+  console.log("map done")
 
   // this means we have 1 message only , so we create a response stream and pass it as a prop to start streaming a response as soon as page loads
   // let stream: StreamableValue<any, any> | null = null;
