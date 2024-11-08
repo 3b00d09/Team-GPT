@@ -37,7 +37,7 @@ export default async function Page(props: props) {
       content: message.content,
       assistant: message.assistant,
       user: message.user,
-      imageUrl: null,
+      imageUrl: imgurl,
     };
     return msg;
   });

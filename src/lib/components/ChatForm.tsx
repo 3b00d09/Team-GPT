@@ -3,14 +3,19 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons";
 
 type props = {
   formSubmit?: (file: File | null, userLatestMessage: string) => Promise<void>;
 };
 
-
+const allowedImageTypes = [
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/webp",
+  ];
 export default function ChatForm({ formSubmit }: props) {
     const [file, setFile] = useState<File | null>(null);
     const [previewImage, setPreviewImage] = useState<string>("");
@@ -33,12 +38,30 @@ export default function ChatForm({ formSubmit }: props) {
       }
     };
 
+    const handleTextareaPaste = (e:React.ClipboardEvent<HTMLTextAreaElement>) =>{
+      const clipboadData = e.clipboardData.items;
+      if(clipboadData.length === 0) return
+
+      const items = Array.from(clipboadData)
+      items.forEach((item)=>{
+        if(item.kind === "file" && item.type.startsWith("image/")){
+          if(!allowedImageTypes.includes(item.type)) return
+        
+          const image = item.getAsFile()
+          if(image){
+            setFile(image)
+            setPreviewImage(URL.createObjectURL(image))
+          }
+        }
+      })
+    }
+
     const handleTextareaInput = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       e.currentTarget.style.height = "auto";
       e.currentTarget.style.height = e.currentTarget.scrollHeight + "px";
     }
 
-    const checkTextareaSubmit = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const checkTextareaSubmit = (e: React.KeyboardEvent<HTMLTextAreaElement>) => { 
         if(e.key === "Enter" && !e.shiftKey && (e.currentTarget.value.trim().length > 0 || file)){
             // simulate a submit event on the form
             chatForm.current?.dispatchEvent(new Event("submit", {bubbles: true}))
@@ -75,7 +98,8 @@ export default function ChatForm({ formSubmit }: props) {
             placeholder="Message AI..."
             ref={inputRef}
             onInput={handleTextareaInput}
-            onKeyUp={checkTextareaSubmit}
+            onKeyDown={checkTextareaSubmit}
+            onPaste={handleTextareaPaste}
             autoComplete="off"
           />
           <div className="absolute bottom-2 right-0 pr-3 flex items-center pointer-events-none">
