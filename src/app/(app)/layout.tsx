@@ -13,6 +13,9 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { AuthForm, type ActionResult } from "@/lib/components/AuthForm";
 import { Toaster } from "@/components/ui/toaster";
+import { dbClient } from "@/lib/db/db";
+import { conversationsTable } from "@/lib/db/schema";
+import { desc, eq } from "drizzle-orm";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -32,11 +35,13 @@ export default async function RootLayout({
     return redirect("/login");
   }
 
+  const conversations = await dbClient.select().from(conversationsTable).orderBy(desc(conversationsTable.createdAt)).where(eq(conversationsTable.userId, user.id));
+
   return (
     <html lang="en">
       <body className={inter.className}>
         <main className="flex w-screen h-screen overflow-hidden text-white">
-          <Conversations />
+          <Conversations conversations={conversations} />
           <div className="flex-1 bg-[#212121] p-4 flex flex-col relative">
             <div className="flex items-center justify-between">
               Welcome {user.username}

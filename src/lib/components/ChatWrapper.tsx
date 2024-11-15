@@ -79,6 +79,8 @@ export default function ChatWrapper(props: props) {
       setMessages([...newMessages, AiMessage]);
       setLatestMessage("");
       setShowScrollBtn(true);
+      navigateToBottom();
+      
     };
 
     const navigateToBottom = ()=>{

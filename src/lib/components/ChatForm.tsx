@@ -81,6 +81,7 @@ export default function ChatForm({ formSubmit }: props) {
           inputRef.current.style.height = "auto";
           setFile(null);
           setPreviewImage("");
+          inputRef.current.focus()
         }
       }
     }
