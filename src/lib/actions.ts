@@ -5,20 +5,19 @@ import { dbClient } from "./db/db";
 import { conversationsTable, messagesTable } from "./db/schema";
 
 import { createStreamableValue } from "ai/rsc";
-import { CoreMessage, CoreUserMessage, generateText, ImagePart, streamText, TextPart, UserContent } from "ai";
+import { CoreMessage, generateText, ImagePart, streamText, TextPart, UserContent } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { messageRow } from "./db/schemaTypes";
 import { validateRequest } from "./auth/auth";
 import { redirect } from "next/navigation";
 
-import { anthropic } from "@ai-sdk/anthropic";
 import { imageBase64ToFile } from "./utils";
-import { MessagesData } from "./types";
+import { MessagesData, NewMessageData } from "./types";
 import { prompt } from "./utils";
 
 export async function sendMessage(
   messages: MessagesData[],
-  newMsg: MessagesData,
+  newMsg: NewMessageData,
   convoId: number,
   newMessage: boolean = false
 ) {
@@ -28,6 +27,7 @@ export async function sendMessage(
   }
 
   let binaryData: Buffer | null = null;
+  let mimeType: string | null = null;
   
 
   const coreMessages: CoreMessage[] = messages.map((message) => {
@@ -39,53 +39,48 @@ export async function sendMessage(
       }
     }
     
-    // messages with just an image can have empty text, and vise versa obv
-    let textPart:TextPart;
-    let imagePart: ImagePart;
+    let content:UserContent = [];
 
-    if(message.content && message.imageUrl){
-      textPart = {
+    if(message.content){
+      content.push({
         type:"text",
-        text:message.content,
-      }
-      imagePart = {
-        type:"image",
-        image:message.imageUrl
-      }
-
-      return {
-        content:[textPart, imagePart],
-        role:"user"
-      }
+        text:message.content
+      })
     }
-    else if(message.imageUrl){
-      imagePart = {
-        type: "image",
-        image: message.imageUrl,
-      };
 
-      return {
-        content: [imagePart],
-        role: "user",
-      };
+    if(message.file && message.file.url){
+      const mimeType = message.file.mimeType
+      if(mimeType.startsWith("image/")){
+        content.push({
+          type:"image",
+          image:message.file.url
+        })
+      }
+      else if(mimeType === "application/pdf"){
+        content.push({
+          type:"file",
+          data: message.file.url,
+          mimeType:"application/pdf"
+        })
+      }
     }
 
     return{
       role:"user",
-      content:message.content,
+      content:content.length > 0 ? content : message.content,
     }
 
   });
  
-  if (newMsg.imageUrl) {
-      const [header, base64Data] = newMsg.imageUrl.split(",");
-      const mime = header.match(/:(.*?);/)?.[1];
-
-      if (!mime) {
-        throw new Error("Invalid MIME type");
-      }
-      binaryData = Buffer.from(base64Data, "base64");
-  }
+  if (newMsg.file?.url) {
+    const [header, base64Data] = newMsg.file?.url.split(",");
+    const mime = header.match(/:(.*?);/)?.[1];
+    if (!mime) {
+      throw new Error("Invalid MIME type");
+    }
+    binaryData = Buffer.from(base64Data, "base64");
+    mimeType = mime;
+}
 
   const stream = createStreamableValue();
   let AIMessage = "";
@@ -100,6 +95,7 @@ export async function sendMessage(
           await updateDatabase(
             messages[messages.length - 1].content as string,
             binaryData,
+            mimeType,
             text,
             convoId,
             newMessage
@@ -219,7 +215,8 @@ export async function sendMessage(
 
 async function updateDatabase(
   userMessage: string,
-  imageBinary: Buffer | null,
+  fileBinary: Buffer | null,
+  fileMime: string | null,
   assistantMessage: string,
   convoId: number,
   newMessage: boolean = false
@@ -239,7 +236,8 @@ async function updateDatabase(
           //@ts-ignore
           conversationId: convoId,
           content: userMessage,
-          image:imageBinary,
+          file:fileBinary,
+          fileType: fileMime,
           user: 1,
           assistant: 0,
         });
@@ -259,8 +257,8 @@ async function updateDatabase(
 }
 
 
-export async function initiateConversation(message: string, image: string | null) {
-  if (!message && !image) {
+export async function initiateConversation(message: string, fileBase64: string | null) {
+  if (!message && !fileBase64) {
     return {
       success: false,
       message: "Message cannot be empty.",
@@ -268,18 +266,20 @@ export async function initiateConversation(message: string, image: string | null
   }
   const { user } = await validateRequest();
   if (!user) return redirect("/login");
-  const topic = await getConversationSummary(message, image);
+  const topic = await getConversationSummary(message, fileBase64);
 
-  let imageBinary: Buffer | null;
+  let fileBinary: Buffer | null = null;
+  let fileMime: string | null = null;
 
-  if(image){
-      const [header, base64Data] = image.split(",");
+  if(fileBase64){
+      const [header, base64Data] = fileBase64.split(",");
       const mime = header.match(/:(.*?);/)?.[1];
 
       if (!mime) {
         throw new Error("Invalid MIME type");
       }
-      imageBinary = Buffer.from(base64Data, "base64");
+      fileBinary = Buffer.from(base64Data, "base64");
+      fileMime = mime;
   }
       try {
         const txResult = await dbClient.transaction(async (tx) => {
@@ -297,7 +297,8 @@ export async function initiateConversation(message: string, image: string | null
               content: message,
               user: true,
               assistant: false,
-              image: imageBinary ? imageBinary : null
+              file: fileBinary,
+              fileType: fileMime,
             })
 
           //revalidatePath("/", "layout");

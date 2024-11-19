@@ -5,17 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useState, useRef } from "react";
 import { faArrowUpFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { allowedFileTypes } from "../utils";
 
 type props = {
   formSubmit?: (file: File | null, userLatestMessage: string) => Promise<void>;
 };
 
-const allowedImageTypes = [
-    "image/png",
-    "image/jpeg",
-    "image/jpg",
-    "image/webp",
-  ];
+
 export default function ChatForm({ formSubmit }: props) {
     const [file, setFile] = useState<File | null>(null);
     const [previewImage, setPreviewImage] = useState<string>("");
@@ -44,13 +40,12 @@ export default function ChatForm({ formSubmit }: props) {
 
       const items = Array.from(clipboadData)
       items.forEach((item)=>{
-        if(item.kind === "file" && item.type.startsWith("image/")){
-          if(!allowedImageTypes.includes(item.type)) return
-        
-          const image = item.getAsFile()
-          if(image){
-            setFile(image)
-            setPreviewImage(URL.createObjectURL(image))
+        if(item.kind === "file" && allowedFileTypes.includes(item.type)){
+
+          const file = item.getAsFile()
+          if(file){
+            setFile(file)
+            setPreviewImage(URL.createObjectURL(file))
           }
         }
       })
@@ -123,7 +118,7 @@ export default function ChatForm({ formSubmit }: props) {
           ref={fileUploadRef}
           name="image"
           type="file"
-          accept="image/png, image/jpg, image/jpeg"
+          accept="image/png, image/jpg, image/jpeg, application/pdf"
           className="hidden"
         />
 

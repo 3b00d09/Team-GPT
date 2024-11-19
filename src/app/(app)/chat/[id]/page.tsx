@@ -6,7 +6,7 @@ import { messagesTable } from "@/lib/db/schema";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { sendMessage } from "@/lib/actions";
 import { StreamableValue } from "ai/rsc";
-import { MessagesData } from "@/lib/types";
+import { fileDataType, MessagesData } from "@/lib/types";
 import ChatWrapper from "@/lib/components/ChatWrapper";
 
 type props = {
@@ -18,26 +18,26 @@ type props = {
 
 export default async function Page(props: props) {
   const messageRows = await dbClient
-    .select({content: messagesTable.content, user: messagesTable.user, assistant: messagesTable.assistant, imageUrl: messagesTable.image})
+    .select({content: messagesTable.content, user: messagesTable.user, assistant: messagesTable.assistant, file: messagesTable.file, fileType: messagesTable.fileType})
     .from(messagesTable)
     .where(eq(messagesTable.conversationId, parseInt(props.params.id)))
     .orderBy(messagesTable.createdAt);
 
   const messages: MessagesData[] = messageRows.map((message) => {
 
-    let imgurl: string = "";
-    if (message.imageUrl) {
-      // this shouldnt be png for all images, need fix
-      imgurl =
-        `data:image/png;base64,` +
-        (message.imageUrl as Buffer).toString("base64");
+    let file:fileDataType = null;
+    if (message.file && message.fileType) {
+      file = {
+        url:`data:${message.fileType};base64,` + (message.file as Buffer).toString("base64"),
+        mimeType: message.fileType
+      }        
     }
 
     const msg: MessagesData = {
       content: message.content,
       assistant: message.assistant,
       user: message.user,
-      imageUrl: imgurl,
+      file
     };
     return msg;
   });
@@ -45,16 +45,24 @@ export default async function Page(props: props) {
   // this means we have 1 message only , so we create a response stream and pass it as a prop to start streaming a response as soon as page loads
   let stream: StreamableValue<any, any> | null = null;
   if (messageRows.length === 1) {
+
+    const _firstMessage = messageRows[0]
+
     const firstMessage:MessagesData = {
-      content: messageRows[0].content,
-      assistant: messageRows[0].assistant,
-      user: messageRows[0].user,
-      imageUrl: null
+      content: _firstMessage.content,
+      assistant: _firstMessage.assistant,
+      user: _firstMessage.user,
     }
 
-    if(messageRows[0].imageUrl){
-      firstMessage.imageUrl = `data:image/png;base64,` + (messageRows[0].imageUrl as Buffer).toString("base64");
+    let file:fileDataType = null;
+    if (_firstMessage.file && _firstMessage.fileType) {
+      file = {
+        url:`data:${_firstMessage.fileType};base64,` + (_firstMessage.file as Buffer).toString("base64"),
+        mimeType: _firstMessage.fileType
+      }   
+      firstMessage.file = file;     
     }
+
     const { newMessage } = await sendMessage(
       [firstMessage],
       firstMessage,

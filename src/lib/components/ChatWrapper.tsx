@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { LatestMessage } from "@/lib/components/Messages";
 import { convertToBase64 } from "../utils";
 import ChatForm from "./ChatForm";
-import { MessagesData } from "../types";
+import { fileDataType, MessagesData } from "../types";
 
 type props = {
   params: {
@@ -43,23 +43,30 @@ export default function ChatWrapper(props: props) {
       // prevent the scroll btn to spam while we are autoscrolling inside the readStreamableValue loop
       setShowScrollBtn(false);
 
-      // usestate isnt fast enough to update the messages array before the readStreamableValue loop so we'll initiate a new array
-      // id is irrelevant here so i just put something random
+      let newFile:fileDataType = null;
+
+      if(file){
+        newFile = {
+          url: await convertToBase64(file),
+          mimeType: file.type
+        }
+      }
+      
       const newMsg = {
         content: userLatestMessage,
         user: true,
         assistant: false,
-        imageUrl: file? await convertToBase64(file) : null,
+        file: newFile,
       };
+
+      // usestate isnt fast enough to update the messages array before the readStreamableValue loop so we'll initiate a new array
       const newMessages: MessagesData[] = [...messages, newMsg];
       setMessages(newMessages);
-
 
       const { newMessage } = await sendMessage(
         newMessages,
         newMsg,
         parseInt(props.params.id),
-        false
       );
 
       // append the stream of content to the same string
@@ -74,7 +81,6 @@ export default function ChatWrapper(props: props) {
         content: streamedContent,
         user: false,
         assistant: true,
-        imageUrl: null,
       };
       setMessages([...newMessages, AiMessage]);
       setLatestMessage("");
@@ -105,7 +111,6 @@ export default function ChatWrapper(props: props) {
                   content: streamedContent,
                   user: false,
                   assistant: true,
-                  imageUrl: null,
                 };
                 setMessages([props.messages[0], AiMessage]);
                 setLatestMessage("");

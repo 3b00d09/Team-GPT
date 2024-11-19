@@ -31,8 +31,8 @@ export const messagesTable = sqliteTable("messages", {
     .notNull()
     .references(() => conversationsTable.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
-  imageUrl: text("image_url"),
-  image: blob("image").$type<Buffer | null>(),
+  file: blob("image").$type<Buffer | null>(),
+  fileType: text("file_type"),
   createdAt: integer("created_at", { mode: "timestamp" }).$default(() => {
     return new Date();
   }),

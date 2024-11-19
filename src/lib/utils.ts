@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { fileDataType } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -14,6 +15,28 @@ export async function convertToBase64(file: File): Promise<string> {
   });
 }
 
+// export async function convertFileToBinaryBuffer(file: File): Promise<fileDataType> {
+//   return new Promise((resolve, reject) => {
+//     const reader = new FileReader();
+//     reader.readAsArrayBuffer(file);  
+    
+//     reader.onload = () => {
+//       if (!reader.result) {
+//         reject(new Error("Failed to read file"));
+//         return;
+//       }
+      
+//       resolve({
+//         url: Buffer.from(reader.result as ArrayBuffer),
+//         mimeType: file.type 
+//       });
+//     };
+    
+//     reader.onerror = (error) => reject(error);
+//   });
+// }
+
+
 export function imageBase64ToFile(image: { image: string; name: string }) {
   const [header, base64Data] = image.image.split(",");
   const mime = header.match(/:(.*?);/)?.[1];
@@ -27,6 +50,13 @@ export function imageBase64ToFile(image: { image: string; name: string }) {
 
 }
 
+export const allowedFileTypes = [
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+
+];
 
 
 export const prompt = `

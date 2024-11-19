@@ -76,12 +76,8 @@ export const Message = ({message, latest}: MessageProps) =>{
               {message.content ? (message.content as string) : ""}
             </Markdown>
           </div>
-          {message.imageUrl && (
-            <img
-              src={message.imageUrl}
-              className="object-contain w-1/2"
-              alt=""
-            />
+          {message.file && message.file.mimeType.slice(0,5) === "image" &&(
+            <img src={message.file.url} className="object-contain w-1/2" alt=""></img>
           )}
         </div>
       </div>
