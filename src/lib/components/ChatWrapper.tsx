@@ -39,17 +39,8 @@ export default function ChatWrapper(props: props) {
         threshold: 0
     })
 
-    window.addEventListener("wheel", (e)=>{
-      if(e.deltaY < 0){
-        setAllowScrolling(false)
-        setShowScrollBtn(true)
-      }
-    })
 
     const handleFormSubmit = async (file: File | null, userLatestMessage: string) => {
-      router.refresh();
-      // prevent the scroll btn to spam while we are autoscrolling inside the readStreamableValue loop
-      setShowScrollBtn(false);
 
       let newFile:fileDataType = null;
 
@@ -131,6 +122,14 @@ export default function ChatWrapper(props: props) {
         setTimeout(() => {
             navigateToBottom()
         }, props.messages.length * 10);
+
+        // attach event listener to scroll 
+        window.addEventListener("wheel", (e)=>{
+          if(e.deltaY < 0){
+            setAllowScrolling(false)
+            setShowScrollBtn(true)
+          }
+        })
     },[])
 
 
