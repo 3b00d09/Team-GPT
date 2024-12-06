@@ -29,6 +29,7 @@ export default function ChatWrapper(props: props) {
     const [messages, setMessages] = useState<MessagesData[]>(props.messages);
     const [showScrollBtn, setShowScrollBtn] = useState<boolean>(true)
     const [latestMessage, setLatestMessage] = useState<string>("")
+    const [allowScrolling, setAllowScrolling] = useState<boolean>(true)
 
     const messagesContainer = useRef<HTMLDivElement>(null);
     const mainContainer = useRef<HTMLDivElement>(null);
@@ -36,6 +37,13 @@ export default function ChatWrapper(props: props) {
     const {ref, entry} = useIntersection({
         root: mainContainer.current,
         threshold: 0
+    })
+
+    window.addEventListener("wheel", (e)=>{
+      if(e.deltaY < 0){
+        setAllowScrolling(false)
+        setShowScrollBtn(true)
+      }
     })
 
     const handleFormSubmit = async (file: File | null, userLatestMessage: string) => {
@@ -85,7 +93,6 @@ export default function ChatWrapper(props: props) {
       setMessages([...newMessages, AiMessage]);
       setLatestMessage("");
       setShowScrollBtn(true);
-      navigateToBottom();
       
     };
 
@@ -132,26 +139,26 @@ export default function ChatWrapper(props: props) {
      // claude did this for me :D
      // debounce limits how many times the function is called so we dont spam scroll
      useEffect(() => {
-    if(latestMessage.length === 0) return;
-       const debouncedNavigateToBottom = () => {
-         if (timeoutRef.current) {
-           clearTimeout(timeoutRef.current);
-         }
+      if(latestMessage.length === 0 || !allowScrolling) return;
+        const debouncedNavigateToBottom = () => {
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
 
-         timeoutRef.current = window.setTimeout(() => {
-           navigateToBottom();
-           timeoutRef.current = null;
-         }, 50);
-       };
+          timeoutRef.current = window.setTimeout(() => {
+            navigateToBottom();
+            timeoutRef.current = null;
+          }, 50);
+        };
 
-       debouncedNavigateToBottom();
+        debouncedNavigateToBottom();
 
-       return () => {
-         if (timeoutRef.current) {
-           clearTimeout(timeoutRef.current);
-         }
-       };
-     }, [messagesContainer.current?.scrollHeight]);
+        return () => {
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
+        };
+     }, [latestMessage]);
 
 
     return (
@@ -174,7 +181,7 @@ export default function ChatWrapper(props: props) {
         </div>
 
         {!entry?.isIntersecting && showScrollBtn && (
-          <NavigateToBottom navigateToBottom={navigateToBottom} />
+          <NavigateToBottom navigateToBottom={navigateToBottom} setAllowScroll={setAllowScrolling} />
         )}
 
         <ChatForm formSubmit={handleFormSubmit}/>
@@ -190,10 +197,15 @@ function LoadingSpinner(){
     );
 }
 
-const NavigateToBottom = ({navigateToBottom} : any) => {   
+const NavigateToBottom = ({navigateToBottom, setAllowScroll} : {navigateToBottom:()=>void, setAllowScroll:React.Dispatch<React.SetStateAction<boolean>>} ) => {
+  
+    const handleScrollClick = () =>{
+      setAllowScroll((prev)=>!prev)
+      navigateToBottom()
+    }
     return (
         <div className="fixed bottom-20">
-            <button onClick={navigateToBottom} className="bg-blue-500 text-white p-2 rounded-full">
+            <button onClick={handleScrollClick} className="bg-blue-500 text-white p-2 rounded-full">
                 <FontAwesomeIcon icon={faWheelchairMove}/>
             </button>
         </div>

@@ -17,6 +17,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+      <script src="https://unpkg.com/react-scan/dist/auto.global.js" async />
+      </head>
       <body className={inter.className}>
         <main className="flex flex-col gap-2 justify-center items-center w-screen h-screen overflow-hidden">
           {children}

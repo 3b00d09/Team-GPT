@@ -88,7 +88,7 @@ export async function sendMessage(
   (async () => {
     try {
       const { textStream } = streamText({
-        model: openai("gpt-4o-2024-08-06"),
+        model: openai("gpt-4o-2024-11-20"),
         messages: coreMessages,
         system: prompt,
         async onFinish({text, finishReason, usage}){

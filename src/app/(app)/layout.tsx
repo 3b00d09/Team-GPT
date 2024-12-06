@@ -39,6 +39,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+      <script src="https://unpkg.com/react-scan/dist/auto.global.js" async />
+      </head>
       <body className={inter.className}>
         <main className="flex w-screen h-screen overflow-hidden text-white">
           <Conversations conversations={conversations} />

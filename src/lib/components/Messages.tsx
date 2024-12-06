@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect} from "react";
+import { useEffect, useState, memo} from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useState } from "react";
 import {faUser, faWheelchairMove} from "@fortawesome/free-solid-svg-icons";
 import Markdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight'
@@ -32,7 +31,7 @@ export default function Messages(props: props){
         <div className="flex flex-col items-center mt-12 gap-8">    
             {props.messages.map((message, index) => {
                 return (
-                    <Message key={index} message={message}/> 
+                    <MemoizedMessage key={index} message={message}/> 
                 )
 
             })}
@@ -110,3 +109,5 @@ export const LatestMessage = ({ content }: latestMessage) => {
     </div>
   );
 };
+
+const MemoizedMessage = memo(Message);
